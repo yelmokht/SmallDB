@@ -32,5 +32,5 @@
 *.app
 
 # Database
-data/students.zip
-data/students.bin
+smalldb/data/students.zip
+smalldb/data/students.bin

@@ -4,17 +4,22 @@ LDLIBS+=-lpthread
 SOURCES = $(wildcard *.cpp */*.cpp)
 HEADERS = $(wildcard *.hpp */*.hpp)
 
-OBJ=db.o student.o
+OBJ=db.o student.o common.o
 
 .PHONY: main
-main: smalldb check run
+
+main: smalldb client#check run
 
 smalldb: smalldb.cpp ${OBJ}
 	$(CXX) $(LDFLAGS) $^ -o $@ $(LOADLIBES) $(LDLIBS)
+
+client: client.cpp
+	$(CXX) $(LDFLAGS) -o client client.cpp common.o
 
 %.o: %.cpp %.hpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $^
 
 .PHONY: clean
+
 clean:
 	-rm *.o
