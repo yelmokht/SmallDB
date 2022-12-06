@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Database
+data/students.zip
+data/students.bin
