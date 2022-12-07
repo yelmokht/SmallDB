@@ -4,6 +4,6 @@
 #include <unistd.h>
 
 
-bool read_exact(int fd, void *buffer, int nbytes);
+bool recv_exactly(int fd, char *buffer, int size);
 
 #endif  // __COMMON_H
