@@ -34,3 +34,7 @@
 # Database
 smalldb/data/students.zip
 smalldb/data/students.bin
+
+# Program
+smalldb/smalldb
+smalldb/client

@@ -34,14 +34,18 @@ bool recv_exactly(int fd, char *buffer, int size)
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2)
+	if (argc < 1) {
 		cout << "Paramètre obligatoire non fourni: chemin vers la db" << endl;
-	char *db_path = argv[2];
+	}
+	char *db_path = argv[1];
+
 	// Gestion de signal: PIPE: Établissement de la connexion
 	signal(SIGPIPE, SIG_IGN);
+
 	//** SOCKET
 	// Création du socket
 	int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
 	// Paramétrage du socket
 	int opt = 1;
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
@@ -49,9 +53,11 @@ int main(int argc, char *argv[])
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(28772);
+
 	// Mise à l'écoute
 	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
 	listen(server_fd, 5);
+
 	// Acceptation
 	size_t addrlen = sizeof(address);
 	int new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen); // Appel bloquant
@@ -69,17 +75,20 @@ int main(int argc, char *argv[])
 	db_load(&db, db_path);
 
 	// Créer un FILE* fout
+	FILE* file = fopen("temp.txt" , "w+");
 
 	//*Traitement de la requête
 	char buffer[1024];
 	uint32_t length;
 	while ((recv_exactly(new_socket, (char *)&length, 4)) && (recv_exactly(new_socket, buffer, ntohl(length))))
 	{
-		cout << "Message reçu"
-			 << "(" << ntohl(length) << "): " << buffer << endl;
-		// parse_and_execute(, &db, buffer);
+		cout << "Message reçu" << "(" << ntohl(length) << "): " << buffer << endl;
+		parse_and_execute(file, &db, buffer);
 		// Renvoi des résultats
+		fopen("temp.txt" , "r+");
+		fread(buffer, sizeof(char), 1024, file);
 		send(new_socket, buffer, sizeof(buffer), 0);
+		fclose(file);
 	}
 
 	close(server_fd);

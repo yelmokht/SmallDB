@@ -1,11 +1,14 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <fstream>
+#include <iostream>
+#include "student.hpp"
 #include "queries.hpp"
-
-#include "boost/units/io.hpp"
 
 // execute_* ///////////////////////////////////////////////////////////////////
 
-void execute_select(FILE* fout, database_t* const db, const char* const field,
-                    const char* const value) {
+void execute_select(FILE* fout, database_t* const db, const char* const field, const char* const value) {
   std::function<bool(const student_t&)> predicate = get_filter(field, value);
   if (!predicate) {
     query_fail_bad_filter(fout, field, value);
@@ -13,7 +16,10 @@ void execute_select(FILE* fout, database_t* const db, const char* const field,
   }
   for (const student_t& s : db->data) {
     if (predicate(s)) {
-      //TODO
+      char buffer[256];
+      student_to_str(buffer, &s, sizeof(buffer));
+      buffer[strlen(buffer)] = '\n';
+      fwrite(buffer, sizeof(char), strlen(buffer), fout);
     }
   }
 }
@@ -32,7 +38,10 @@ void execute_update(FILE* fout, database_t* const db, const char* const ffield, 
   for (student_t& s : db->data) {
     if (predicate(s)) {
       updater(s);
-      //TODO
+      char buffer[256];
+      student_to_str(buffer, &s, sizeof(buffer));
+      buffer[strlen(buffer)] = '\n';
+      fwrite(buffer, sizeof(char), strlen(buffer), fout);
     }
   }
 }
@@ -117,6 +126,7 @@ void parse_and_execute_delete(FILE* fout, database_t* db, const char* const quer
 }
 
 void parse_and_execute(FILE* fout, database_t* db, const char* const query) {
+  fopen("temp.txt" , "w+");
   if (strncmp("select", query, sizeof("select")-1) == 0) {
     parse_and_execute_select(fout, db, query);
   } else if (strncmp("update", query, sizeof("update")-1) == 0) {
@@ -128,6 +138,7 @@ void parse_and_execute(FILE* fout, database_t* db, const char* const query) {
   } else {
     query_fail_bad_query_type(fout);
   }
+  fclose(fout);
 }
 
 // query_fail_* ///////////////////////////////////////////////////////////////
