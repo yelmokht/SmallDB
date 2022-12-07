@@ -35,7 +35,7 @@ void student_to_str(char *buffer, const student_t *s, size_t buffer_size) {
   int day   = s->birthdate.tm_mday;
   int month = s->birthdate.tm_mon;
   int year  = s->birthdate.tm_year;
-  snprintf(buffer, buffer_size, "%.9u: %s %s in section %s, born on the %.2d/%.2d/%.2d",
+  snprintf(buffer, buffer_size, "%.9u: %s %s in section %s, born on the %.2d/%.2d/%.2d\n",
           s->id, s->fname, s->lname, s->section, day, month + 1, year + 1900);
 }
 

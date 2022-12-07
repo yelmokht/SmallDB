@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+
 #include <fstream>
 #include <iostream>
+
 #include "student.hpp"
 #include "queries.hpp"
 
@@ -16,9 +18,8 @@ void execute_select(FILE* fout, database_t* const db, const char* const field, c
   }
   for (const student_t& s : db->data) {
     if (predicate(s)) {
-      char buffer[256];
+      char buffer[512];
       student_to_str(buffer, &s, sizeof(buffer));
-      buffer[strlen(buffer)] = '\n';
       fwrite(buffer, sizeof(char), strlen(buffer), fout);
     }
   }
@@ -126,7 +127,6 @@ void parse_and_execute_delete(FILE* fout, database_t* db, const char* const quer
 }
 
 void parse_and_execute(FILE* fout, database_t* db, const char* const query) {
-  fopen("temp.txt" , "w+");
   if (strncmp("select", query, sizeof("select")-1) == 0) {
     parse_and_execute_select(fout, db, query);
   } else if (strncmp("update", query, sizeof("update")-1) == 0) {
@@ -138,7 +138,6 @@ void parse_and_execute(FILE* fout, database_t* db, const char* const query) {
   } else {
     query_fail_bad_query_type(fout);
   }
-  fclose(fout);
 }
 
 // query_fail_* ///////////////////////////////////////////////////////////////

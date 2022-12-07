@@ -6,4 +6,6 @@
 
 bool recv_exactly(int fd, char *buffer, int size);
 
+void sendSocket(int sock, char *buffer);
+
 #endif  // __COMMON_H

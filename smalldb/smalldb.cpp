@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <err.h> // err
+#include <sys/stat.h>
+
 #include <iostream>
 
 #include "common.hpp"
@@ -29,6 +31,21 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(28772);
+}
+
+/**
+ * Reads results from file and send it through the socket
+ */
+void sendResults(int sock, char *buffer)
+{
+	FILE *file = fopen("temp.txt", "r");
+	struct stat st;
+	fstat(fileno(file), &st);	//avoir la taille du fichier
+	while((fread(buffer, sizeof(char), 1024, file)) > 0);
+	{
+		sendSocket(sock, buffer);
+	}
+	fclose(file);
 }
 
 int main(int argc, char *argv[])
@@ -66,22 +83,19 @@ int main(int argc, char *argv[])
 	// TODO
 
 	//*Traitement de la requête
-	// Créer un FILE* fout
-	FILE *file = fopen("temp.txt", "w+");
+	FILE *file = fopen("temp.txt", "w");
 	char buffer[1024];
 	uint32_t length;
 	while ((recv_exactly(new_socket, (char *)&length, 4)) && (recv_exactly(new_socket, buffer, ntohl(length))))
 	{
 		cout << "Message reçu"
 			 << "(" << ntohl(length) << "): " << buffer << endl;
+		
 		parse_and_execute(file, &db, buffer);
-		// Renvoi des résultats
-		fopen("temp.txt", "r+");
-		fread(buffer, sizeof(char), 1024, file);
-		send(new_socket, buffer, sizeof(buffer), 0);
 		fclose(file);
+		// Renvoi des résultats
+		sendResults(new_socket, buffer);
 	}
-
 	close(server_fd);
 	close(new_socket);
 	return 0;

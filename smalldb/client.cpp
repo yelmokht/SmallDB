@@ -10,17 +10,6 @@
 
 using namespace std;
 
-void sendQuery(int sock, char *buffer)
-{
-   //TODO: Gestion d'erreur
-   uint32_t length = strlen(buffer);
-   buffer[length - 1] = '\0';
-   length = htonl(length);
-   send(sock, &length, sizeof(length), 0);
-   length = ntohl(length);
-   send(sock, buffer, length, 0);
-}
-
 int main(int argc, char const *argv[])
 {
    if (argc < 2)
@@ -43,10 +32,12 @@ int main(int argc, char const *argv[])
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
       // Envoi via socket
-      sendQuery(sock, buffer);
+      sendSocket(sock, buffer);
       // Attente de réponse
-      recv(sock, &buffer, 1024, 0);
-      cout << buffer << endl;
+      while((recv_exactly(sock, (char*)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
+      {
+         cout << buffer << endl;
+      }
    }
 
    close(sock);
