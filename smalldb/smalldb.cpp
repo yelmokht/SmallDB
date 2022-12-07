@@ -9,14 +9,34 @@
 #include <iostream>
 
 #include "common.hpp"
+#include "db.hpp"
+#include "queries.hpp"
 #include "errorcodes.hpp"
 
 using namespace std;
 // TODO: Mieux diviser le code en helpers function pour réduire taille du main
 // TODO: Traitement d'erreur
 
-int main(void)
+bool recv_exactly(int fd, char *buffer, int size)
 {
+	int lu, i = 0;
+	while (i < size && (lu = recv(fd, buffer, size - i, 0)) > 0)
+	{
+		i += lu;
+	}
+
+	if (lu < 0)
+	{
+		perror("read()");
+	}
+	return lu > 0;
+}
+
+int main(int argc, char *argv[])
+{
+	if (argc < 2)
+		cout << "Paramètre obligatoire non fourni: chemin vers la db" << endl;
+	char *db_path = argv[2];
 	// Gestion de signal: PIPE: Établissement de la connexion
 	signal(SIGPIPE, SIG_IGN);
 	//** SOCKET
@@ -44,13 +64,22 @@ int main(void)
 	//*Création du thread:
 	// TODO
 
+	//*Lancement de base de donnée
+	database_t db;
+	db_load(&db, db_path);
+
+	// Créer un FILE* fout
+
 	//*Traitement de la requête
 	char buffer[1024];
 	uint32_t length;
-	while(read_exact(new_socket, (char*)&length, 4) && read_exact(new_socket, buffer, ntohl(length)))
+	while ((recv_exactly(new_socket, (char *)&length, 4)) && (recv_exactly(new_socket, buffer, ntohl(length))))
 	{
-		cout << "(server): Message reçu: " << buffer << endl;
-		write(new_socket, &buffer, sizeof(buffer));
+		cout << "Message reçu"
+			 << "(" << ntohl(length) << "): " << buffer << endl;
+		// parse_and_execute(, &db, buffer);
+		// Renvoi des résultats
+		send(new_socket, buffer, sizeof(buffer), 0);
 	}
 
 	close(server_fd);

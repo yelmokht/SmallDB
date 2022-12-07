@@ -13,6 +13,7 @@ void execute_select(FILE* fout, database_t* const db, const char* const field,
   }
   for (const student_t& s : db->data) {
     if (predicate(s)) {
+      //TODO
     }
   }
 }
@@ -31,6 +32,7 @@ void execute_update(FILE* fout, database_t* const db, const char* const ffield, 
   for (student_t& s : db->data) {
     if (predicate(s)) {
       updater(s);
+      //TODO
     }
   }
 }
@@ -45,6 +47,7 @@ void execute_insert(FILE* fout, database_t* const db, const char* const fname,
   snprintf(s->lname, sizeof(s->lname), "%s", lname);
   snprintf(s->section, sizeof(s->section), "%s", section);
   s->birthdate = birthdate;
+  //TODO
 }
 
 void execute_delete(FILE* fout, database_t* const db, const char* const field,
@@ -56,6 +59,7 @@ void execute_delete(FILE* fout, database_t* const db, const char* const field,
   }
   auto new_end = remove_if(db->data.begin(), db->data.end(), predicate);
   db->data.erase(new_end, db->data.end());
+  //TODO
 }
 
 // parse_and_execute_* ////////////////////////////////////////////////////////

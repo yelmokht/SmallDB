@@ -8,9 +8,20 @@
 
 #include "common.hpp"
 
-using namespace std; 
+using namespace std;
 
-//TODO: Safe_send et safe_read
+void sendQuery(int sock, char *buffer)
+{
+   //TODO: Gestion d'erreur
+   uint32_t length = strlen(buffer);
+   buffer[length - 1] = '\0';
+   length = htonl(length);
+   send(sock, &length, sizeof(length), 0);
+   length = ntohl(length);
+   send(sock, buffer, length, 0);
+   cout << "Envoi..."
+        << "(" << length << ")" << endl;
+}
 
 int main(int argc, char const *argv[])
 {
@@ -30,18 +41,15 @@ int main(int argc, char const *argv[])
    connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
    char buffer[1024];
-   uint32_t longueur;
-   //Récuperer requête
+   uint32_t length;
+   // Récuperer requête
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
-   {  
-      buffer[strlen(buffer)+1] = '\0';
-      longueur = htonl(strlen(buffer));
-      cout << "Envoi..." << endl;
-      //Envoi via socket
-      write(sock, &longueur, 4);
-      longueur = ntohl(strlen(buffer));
-      write(sock, &buffer, longueur);
-      //Attente de réponse
+   {
+      // Envoi via socket
+      sendQuery(sock, buffer);
+      // Attente de réponse
+      recv(sock, &buffer, 1024, 0);
+      cout << buffer << endl;
    }
 
    close(sock);
