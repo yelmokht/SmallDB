@@ -15,6 +15,7 @@
 void execute_select(int fout, database_t *const db, const char *const field, const char *const value)
 {
 	char buffer[512];
+	int count = 0;
 	std::function<bool(const student_t &)> predicate = get_filter(field, value);
 	if (!predicate)
 	{
@@ -27,8 +28,11 @@ void execute_select(int fout, database_t *const db, const char *const field, con
 		{
 			student_to_str(buffer, &s, sizeof(buffer));
 			sendSocket(fout, buffer);
+			++count;
 		}
 	}
+	sprintf(buffer, "%d student(s) selected\n", count);
+	sendSocket(fout, buffer);
 	sprintf(buffer, "%d", EOF);
 	sendSocket(fout, buffer);
 }
@@ -36,6 +40,7 @@ void execute_select(int fout, database_t *const db, const char *const field, con
 void execute_update(int fout, database_t *const db, const char *const ffield, const char *const fvalue, const char *const efield, const char *const evalue)
 {
 	char buffer[512];
+	int count = 0;
 	std::function<bool(const student_t &)> predicate = get_filter(ffield, fvalue);
 	if (!predicate)
 	{
@@ -53,10 +58,11 @@ void execute_update(int fout, database_t *const db, const char *const ffield, co
 		if (predicate(s))
 		{
 			updater(s);
-			student_to_str(buffer, &s, sizeof(buffer));
-			sendSocket(fout, buffer);
+			++count;
 		}
 	}
+	sprintf(buffer, "%d student(s) updated\n", count);
+	sendSocket(fout, buffer);
 	sprintf(buffer, "%d", EOF);
 	sendSocket(fout, buffer);
 }
@@ -72,7 +78,11 @@ void execute_insert(int fout, database_t *const db, const char *const fname,
 	snprintf(s->lname, sizeof(s->lname), "%s", lname);
 	snprintf(s->section, sizeof(s->section), "%s", section);
 	s->birthdate = birthdate;
-	// TODO
+	char buffer[512];
+	student_to_str(buffer, s, sizeof(buffer));
+	sendSocket(fout, buffer);
+	sprintf(buffer, "%d", EOF);
+	sendSocket(fout, buffer);
 }
 
 void execute_delete(int fout, database_t *const db, const char *const field,
@@ -89,10 +99,9 @@ void execute_delete(int fout, database_t *const db, const char *const field,
 	db->data.erase(new_end, db->data.end());
 	int new_size = db->data.size();
 	int diff = old_size - new_size;
-	std::string buffer = std::to_string(diff) + " student(s) deleted";
+	std::string buffer = std::to_string(diff) + " student(s) deleted\n";
 	sendSocket(fout, buffer);
 	sendSocket(fout, std::to_string(EOF));
-
 }
 
 // parse_and_execute_* ////////////////////////////////////////////////////////

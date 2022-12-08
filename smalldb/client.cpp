@@ -53,7 +53,7 @@ int main(int argc, char const *argv[])
 
       }
       memset(buffer,0,sizeof(buffer));
-      cout << endl << ">";
+      cout << ">";
    }
 
    close(sock);
