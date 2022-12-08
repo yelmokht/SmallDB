@@ -16,6 +16,7 @@
 #include "errorcodes.hpp"
 
 using namespace std;
+
 // TODO: Mieux diviser le code en helpers function pour réduire taille du main
 // TODO: Traitement d'erreur
 
@@ -39,9 +40,7 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 void sendResults(int sock, char *buffer)
 {
 	FILE *file = fopen("temp.txt", "r");
-	struct stat st;
-	fstat(fileno(file), &st);	//avoir la taille du fichier
-	while((fread(buffer, sizeof(char), 1024, file)) > 0);
+	while ((fread(buffer, sizeof(char), 1024, file)) > 0)
 	{
 		sendSocket(sock, buffer);
 	}
@@ -50,6 +49,8 @@ void sendResults(int sock, char *buffer)
 
 int main(int argc, char *argv[])
 {
+	// Gestion de signal: PIPE: Établissement de la connexion
+	signal(SIGPIPE, SIG_IGN);
 	//*Lancement de base de donnée
 	if (argc < 2)
 	{
@@ -58,17 +59,13 @@ int main(int argc, char *argv[])
 	database_t db;
 	char *db_path = argv[1];
 	db_load(&db, db_path);
-
-	// Gestion de signal: PIPE: Établissement de la connexion
-	signal(SIGPIPE, SIG_IGN);
-
-	//** SOCKET
-	// Création du socket
+	// Création et paramétrage du socket
 	int server_fd;
 	struct sockaddr_in address;
 	createSocket(server_fd, address);
 	// Mise à l'écoute
 	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+	warnx("Waiting client connection...");
 	listen(server_fd, 5);
 	// Acceptation
 	size_t addrlen = sizeof(address);
@@ -77,23 +74,21 @@ int main(int argc, char *argv[])
 	{
 		err(NETWORK_ERROR, "Unnable to established connexion with client.\n");
 	}
-	warnx("Client %s connecté.", inet_ntoa(address.sin_addr));
+	warnx("Client connecté.");
 
 	//*Création du thread:
 	// TODO
 
 	//*Traitement de la requête
-	FILE *file = fopen("temp.txt", "w");
 	char buffer[1024];
 	uint32_t length;
 	while ((recv_exactly(new_socket, (char *)&length, 4)) && (recv_exactly(new_socket, buffer, ntohl(length))))
 	{
-		cout << "Message reçu"
+		cout << "Message reçu "
 			 << "(" << ntohl(length) << "): " << buffer << endl;
-		
+		FILE *file = fopen("temp.txt", "w");
 		parse_and_execute(file, &db, buffer);
 		fclose(file);
-		// Renvoi des résultats
 		sendResults(new_socket, buffer);
 	}
 	close(server_fd);

@@ -18,26 +18,35 @@ int main(int argc, char const *argv[])
       exit(1);
    }
    signal(SIGPIPE, SIG_IGN);
+   // Création et Paramétrage du socket
    int sock = socket(AF_INET, SOCK_STREAM, 0);
    struct sockaddr_in serv_addr;
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_port = htons(28772);
    // Conversion de string vers IPv4 ou IPv6 en binaire
    inet_pton(AF_INET, argv[1], &serv_addr.sin_addr);
-   connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+   while ((connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) < 0)
+   {
+      cout << "Trying connection with server..." << endl;
+      sleep(1);
+   }
+   cout << "Connexion established!" << endl;
 
+   // Récuperer requête
    char buffer[1024];
    uint32_t length;
-   // Récuperer requête
+   cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
       // Envoi via socket
-      sendSocket(sock, buffer);
+      if (!sendSocket(sock, buffer))
+         cout << "Erreur sending message to server" << endl;
       // Attente de réponse
-      while((recv_exactly(sock, (char*)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
+      if((recv_exactly(sock, (char*)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
       {
          cout << buffer << endl;
       }
+      cout << ">";
    }
 
    close(sock);

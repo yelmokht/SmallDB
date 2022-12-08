@@ -7,35 +7,44 @@
 
 #include <iostream>
 
-
 using namespace std;
 /**
  * Reads the exactly number of bytes (size)
  */
 bool recv_exactly(int fd, char *buffer, int size)
 {
-	int lu, i = 0;
-	while (i < size && (lu = recv(fd, buffer, size - i, 0)) > 0)
+	int recv_bytes, i = 0;
+	while (i < size && (recv_bytes = recv(fd, buffer, size - i, 0)) > 0)
 	{
-		i += lu;
+		i += recv_bytes;
 	}
 
-	if (lu < 0)
+	if (recv_bytes < 0)
 	{
-		cerr << "read()";
+		cerr << "recv_exactly()";
 	}
-	return lu > 0;
+	return recv_bytes > 0;
 }
+
 /**
- * Send the size of the strign and then the string through a socket
-*/
-void sendSocket(int sock, char *buffer)
+ * Send the size of the string and then the string through a socket
+ */
+bool sendSocket(int sock, char *buffer)
 {
-   //TODO: Gestion d'erreur
-   uint32_t length = strlen(buffer);
-   buffer[length - 1] = '\0';
-   length = htonl(length);
-   send(sock, &length, sizeof(length), 0);
-   length = ntohl(length);
-   send(sock, buffer, length, 0);
+	buffer[strlen(buffer) - 1] = '\0';
+	uint32_t length = strlen(buffer) + 1;
+	length = htonl(length);
+	if ((send(sock, &length, sizeof(length), 0)) < 0)
+	{
+		cerr << "Message length was not sent" << endl;
+		return false;
+	}
+	length = ntohl(length);
+	if ((send(sock, buffer, length, 0)) < 0)
+	{
+		cerr << "Message was not sent" << endl;
+		return false;
+	}
+	cout << "The message was successfully sent: " << buffer << "(" << length << ")" << endl;
+	return true;
 }
