@@ -18,7 +18,6 @@ int main(int argc, char const *argv[])
       printf("Paramètre IP obligatoire non indiqué.\n");
       exit(1);
    }
-   signal(SIGPIPE, SIG_IGN);
    // Création et Paramétrage du socket
    int sock = socket(AF_INET, SOCK_STREAM, 0);
    struct sockaddr_in serv_addr;

@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include <signal.h>
 #include <err.h> // err
-#include <sys/stat.h>
+#include <pthread.h>
+
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -23,7 +24,16 @@
 using namespace std;
 
 // TODO: Mieux diviser le code en helpers function pour réduire taille du main
-// TODO: Traitement d'erreur
+// TODO: Traitement d'erreur+
+
+typedef struct
+{
+	int client_id;
+	int sock;
+	database_t *db;
+} thread_args;
+
+vector<int> list_client, list_tid;
 
 /**
  * Create and configure the server socket
@@ -37,6 +47,24 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(28772);
+}
+
+void *service(void *args)
+{
+	thread_args *t_args = (thread_args *)args;
+	// cout << t_args->client_id << ":" << t_args->sock << endl;
+	//*Traitement de la requête
+	char buffer[1024];
+	uint32_t length;
+	while ((recv_exactly(t_args->sock, (char *)&length, 4)) && (recv_exactly(t_args->sock, buffer, ntohl(length))))
+	{
+		cout << "Message reçu "
+			 << "(" << ntohl(length) << "): " << buffer << endl;
+		parse_and_execute(t_args->sock, t_args->db, buffer);
+	}
+	warnx("Client %d disconnected!", t_args->client_id);
+	list_client.erase(list_client.begin()+t_args->client_id-1);
+	return NULL;
 }
 
 /**
@@ -63,8 +91,6 @@ void sendResults(int sock)
 
 int main(int argc, char *argv[])
 {
-	// Gestion de signal: PIPE: Établissement de la connexion
-	signal(SIGPIPE, SIG_IGN);
 	//*Lancement de base de donnée
 	if (argc < 2)
 	{
@@ -80,27 +106,30 @@ int main(int argc, char *argv[])
 	// Mise à l'écoute
 	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
 	warnx("Waiting client connection...");
-	listen(server_fd, 5);
+	listen(server_fd, 2);
 	// Acceptation
+	int new_socket;
 	size_t addrlen = sizeof(address);
-	int new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen); // Appel bloquant
+	while ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) > 0)
+	{
+		list_client.push_back(new_socket);
+		warnx("Client connected (%lu).", list_client.size());
+		pthread_t tid;
+		thread_args args;
+		list_tid.push_back(tid);
+		args.client_id = (int)list_tid.size();
+		args.sock = new_socket;
+		args.db = &db;
+		// pthread_mask activé
+		pthread_create(&tid, NULL, service, &args);
+		// pthread_mask desactivé
+	}
+
 	if (new_socket == DISCONNECTED)
 	{
 		err(NETWORK_ERROR, "Unnable to established connexion with client.\n");
 	}
-	warnx("Client connecté.");
 
-	//*Création du thread:
-	// TODO
-
-	//*Traitement de la requête
-	char buffer[1024];
-	uint32_t length;
-	while ((recv_exactly(new_socket, (char *)&length, 4)) && (recv_exactly(new_socket, buffer, ntohl(length))))
-	{
-		cout << "Message reçu " << "(" << ntohl(length) << "): " << buffer << endl;
-		parse_and_execute(new_socket, &db, buffer);
-	}
 	close(server_fd);
 	close(new_socket);
 	return 0;
