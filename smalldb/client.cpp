@@ -33,20 +33,21 @@ int main(int argc, char const *argv[])
    cout << "Connexion established!" << endl;
 
    // Récuperer requête
-   char buffer[1024];
+   char buffer[2048];
    uint32_t length;
    cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
+      buffer[strlen(buffer) - 1] = '\0';
       // Envoi via socket
       if (!sendSocket(sock, buffer))
          cout << "Erreur sending message to server" << endl;
       // Attente de réponse
-      if((recv_exactly(sock, (char*)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
+      while((recv_exactly(sock, (char*)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
       {
-         cout << buffer << endl;
+         cout << buffer;
       }
-      cout << ">";
+      cout << endl << ">";
    }
 
    close(sock);

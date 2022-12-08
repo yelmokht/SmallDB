@@ -42,7 +42,8 @@ void sendResults(int sock, char *buffer)
 	FILE *file = fopen("temp.txt", "r");
 	while ((fread(buffer, sizeof(char), 1024, file)) > 0)
 	{
-		sendSocket(sock, buffer);
+		if (!sendSocket(sock, buffer))
+			cerr << "Message not sent" << endl;
 	}
 	fclose(file);
 }

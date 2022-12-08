@@ -31,8 +31,7 @@ bool recv_exactly(int fd, char *buffer, int size)
  */
 bool sendSocket(int sock, char *buffer)
 {
-	buffer[strlen(buffer) - 1] = '\0';
-	uint32_t length = strlen(buffer) + 1;
+	uint32_t length = strlen(buffer)+1;
 	length = htonl(length);
 	if ((send(sock, &length, sizeof(length), 0)) < 0)
 	{
