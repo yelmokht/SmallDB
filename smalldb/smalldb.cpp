@@ -7,8 +7,13 @@
 #include <signal.h>
 #include <err.h> // err
 #include <sys/stat.h>
-
+#include <string>
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <cstring>
+#include <vector>
+#include <algorithm>
 
 #include "common.hpp"
 #include "db.hpp"
@@ -37,15 +42,23 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 /**
  * Reads results from file and send it through the socket
  */
-void sendResults(int sock, char *buffer)
+void sendResults(int sock)
 {
-	FILE *file = fopen("temp.txt", "r");
-	while ((fread(buffer, sizeof(char), 1024, file)) > 0)
+	ifstream file("temp.txt");
+	string b;
+	char buffer[1024];
+	while (getline(file, b))
 	{
+		strcpy(buffer, b.c_str());
+		buffer[strlen(buffer)] = '\n';
 		if (!sendSocket(sock, buffer))
+		{
 			cerr << "Message not sent" << endl;
+		}
 	}
-	fclose(file);
+	file.close();
+	sprintf(buffer, "%d", EOF);
+	sendSocket(sock, buffer);
 }
 
 int main(int argc, char *argv[])
@@ -85,12 +98,8 @@ int main(int argc, char *argv[])
 	uint32_t length;
 	while ((recv_exactly(new_socket, (char *)&length, 4)) && (recv_exactly(new_socket, buffer, ntohl(length))))
 	{
-		cout << "Message reçu "
-			 << "(" << ntohl(length) << "): " << buffer << endl;
-		FILE *file = fopen("temp.txt", "w");
-		parse_and_execute(file, &db, buffer);
-		fclose(file);
-		sendResults(new_socket, buffer);
+		cout << "Message reçu " << "(" << ntohl(length) << "): " << buffer << endl;
+		parse_and_execute(new_socket, &db, buffer);
 	}
 	close(server_fd);
 	close(new_socket);

@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
+#include <string>
 
 #include "common.hpp"
 
@@ -33,7 +34,7 @@ int main(int argc, char const *argv[])
    cout << "Connexion established!" << endl;
 
    // Récuperer requête
-   char buffer[2048];
+   char buffer[1024];
    uint32_t length;
    cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
@@ -45,8 +46,13 @@ int main(int argc, char const *argv[])
       // Attente de réponse
       while((recv_exactly(sock, (char*)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
       {
+         if (buffer == to_string(EOF)) {
+            break;
+         }
          cout << buffer;
+
       }
+      memset(buffer,0,sizeof(buffer));
       cout << endl << ">";
    }
 

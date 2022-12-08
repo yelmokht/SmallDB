@@ -1,17 +1,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string>
 
 #include <fstream>
 #include <iostream>
 
 #include "student.hpp"
 #include "queries.hpp"
+#include "common.hpp"
 
 // execute_* ///////////////////////////////////////////////////////////////////
 
-void execute_select(FILE *fout, database_t *const db, const char *const field, const char *const value)
+void execute_select(int fout, database_t *const db, const char *const field, const char *const value)
 {
+	char buffer[512];
 	std::function<bool(const student_t &)> predicate = get_filter(field, value);
 	if (!predicate)
 	{
@@ -22,15 +25,17 @@ void execute_select(FILE *fout, database_t *const db, const char *const field, c
 	{
 		if (predicate(s))
 		{
-			char buffer[512];
 			student_to_str(buffer, &s, sizeof(buffer));
-			fwrite(buffer, sizeof(char), strlen(buffer), fout);
+			sendSocket(fout, buffer);
 		}
 	}
+	sprintf(buffer, "%d", EOF);
+	sendSocket(fout, buffer);
 }
 
-void execute_update(FILE *fout, database_t *const db, const char *const ffield, const char *const fvalue, const char *const efield, const char *const evalue)
+void execute_update(int fout, database_t *const db, const char *const ffield, const char *const fvalue, const char *const efield, const char *const evalue)
 {
+	char buffer[512];
 	std::function<bool(const student_t &)> predicate = get_filter(ffield, fvalue);
 	if (!predicate)
 	{
@@ -48,15 +53,15 @@ void execute_update(FILE *fout, database_t *const db, const char *const ffield, 
 		if (predicate(s))
 		{
 			updater(s);
-			char buffer[256];
 			student_to_str(buffer, &s, sizeof(buffer));
-			buffer[strlen(buffer)] = '\n';
-			fwrite(buffer, sizeof(char), strlen(buffer), fout);
+			sendSocket(fout, buffer);
 		}
 	}
+	sprintf(buffer, "%d", EOF);
+	sendSocket(fout, buffer);
 }
 
-void execute_insert(FILE *fout, database_t *const db, const char *const fname,
+void execute_insert(int fout, database_t *const db, const char *const fname,
 					const char *const lname, const unsigned id, const char *const section,
 					const tm birthdate)
 {
@@ -70,7 +75,7 @@ void execute_insert(FILE *fout, database_t *const db, const char *const fname,
 	// TODO
 }
 
-void execute_delete(FILE *fout, database_t *const db, const char *const field,
+void execute_delete(int fout, database_t *const db, const char *const field,
 					const char *const value)
 {
 	std::function<bool(const student_t &)> predicate = get_filter(field, value);
@@ -79,14 +84,20 @@ void execute_delete(FILE *fout, database_t *const db, const char *const field,
 		query_fail_bad_filter(fout, field, value);
 		return;
 	}
+	int old_size = db->data.size();
 	auto new_end = remove_if(db->data.begin(), db->data.end(), predicate);
 	db->data.erase(new_end, db->data.end());
-	// TODO
+	int new_size = db->data.size();
+	int diff = old_size - new_size;
+	std::string buffer = std::to_string(diff) + " student(s) deleted";
+	sendSocket(fout, buffer);
+	sendSocket(fout, std::to_string(EOF));
+
 }
 
 // parse_and_execute_* ////////////////////////////////////////////////////////
 
-void parse_and_execute_select(FILE *fout, database_t *db, const char *const query)
+void parse_and_execute_select(int fout, database_t *db, const char *const query)
 {
 	char ffield[32], fvalue[64]; // filter data
 	int counter;
@@ -104,7 +115,7 @@ void parse_and_execute_select(FILE *fout, database_t *db, const char *const quer
 	}
 }
 
-void parse_and_execute_update(FILE *fout, database_t *db, const char *const query)
+void parse_and_execute_update(int fout, database_t *db, const char *const query)
 {
 	char ffield[32], fvalue[64]; // filter data
 	char efield[32], evalue[64]; // edit data
@@ -124,7 +135,7 @@ void parse_and_execute_update(FILE *fout, database_t *db, const char *const quer
 	}
 }
 
-void parse_and_execute_insert(FILE *fout, database_t *db, const char *const query)
+void parse_and_execute_insert(int fout, database_t *db, const char *const query)
 {
 	char fname[64], lname[64], section[64], date[11];
 	unsigned id;
@@ -144,7 +155,7 @@ void parse_and_execute_insert(FILE *fout, database_t *db, const char *const quer
 	}
 }
 
-void parse_and_execute_delete(FILE *fout, database_t *db, const char *const query)
+void parse_and_execute_delete(int fout, database_t *db, const char *const query)
 {
 	char ffield[32], fvalue[64]; // filter data
 	int counter;
@@ -162,7 +173,7 @@ void parse_and_execute_delete(FILE *fout, database_t *db, const char *const quer
 	}
 }
 
-void parse_and_execute(FILE *fout, database_t *db, const char *const query)
+void parse_and_execute(int fout, database_t *db, const char *const query)
 {
 	if (strncmp("select", query, sizeof("select") - 1) == 0)
 	{
@@ -188,38 +199,43 @@ void parse_and_execute(FILE *fout, database_t *db, const char *const query)
 
 // query_fail_* ///////////////////////////////////////////////////////////////
 
-void query_fail_bad_query_type(FILE *const fout)
+void query_fail_bad_query_type(int fout)
 {
 	std::string buffer = "Query fail: Bad query type!";
-	fwrite(buffer.c_str(), sizeof(char), sizeof(buffer), fout);
+	sendSocket(fout, buffer);
+	sendSocket(fout, std::to_string(EOF));
 }
 
-void query_fail_bad_format(FILE *const fout, const char *const query_type)
+void query_fail_bad_format(int fout, const char *const query_type)
 {
 	std::string buffer = "Query fail: Bad format: ";
 	buffer.append(query_type);
-	fwrite(buffer.c_str(), sizeof(char), sizeof(buffer), fout);
+	sendSocket(fout, buffer);
+	sendSocket(fout, std::to_string(EOF));
 }
 
-void query_fail_too_long(FILE *const fout, const char *const query_type)
+void query_fail_too_long(int fout, const char *const query_type)
 {
 	std::string buffer = "Query fail: Bad too log: ";
 	buffer.append(query_type);
-	fwrite(buffer.c_str(), sizeof(char), sizeof(buffer), fout);
+	sendSocket(fout, buffer);
+	sendSocket(fout, std::to_string(EOF));
 }
 
-void query_fail_bad_filter(FILE *const fout, const char *const field, const char *const filter)
+void query_fail_bad_filter(int fout, const char *const field, const char *const filter)
 {
 	std::string buffer = "Query fail: Bad filter: ";
 	buffer.append(field);
 	buffer.append(filter);
-	fwrite(buffer.c_str(), sizeof(char), sizeof(buffer), fout);
+	sendSocket(fout, buffer);
+	sendSocket(fout, std::to_string(EOF));
 }
 
-void query_fail_bad_update(FILE *const fout, const char *const field, const char *const filter)
+void query_fail_bad_update(int fout, const char *const field, const char *const filter)
 {
 	std::string buffer = "Query fail: Bad update: ";
 	buffer.append(field);
 	buffer.append(filter);
-	fwrite(buffer.c_str(), sizeof(char), sizeof(buffer), fout);
+	sendSocket(fout, buffer);
+	sendSocket(fout, std::to_string(EOF));
 }

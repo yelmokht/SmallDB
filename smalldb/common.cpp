@@ -23,15 +23,16 @@ bool recv_exactly(int fd, char *buffer, int size)
 	{
 		cerr << "recv_exactly()";
 	}
+	
 	return recv_bytes > 0;
 }
 
 /**
  * Send the size of the string and then the string through a socket
  */
-bool sendSocket(int sock, char *buffer)
+bool sendSocket(int sock, string buffer)
 {
-	uint32_t length = strlen(buffer)+1;
+	uint32_t length = buffer.size() +1;
 	length = htonl(length);
 	if ((send(sock, &length, sizeof(length), 0)) < 0)
 	{
@@ -39,7 +40,7 @@ bool sendSocket(int sock, char *buffer)
 		return false;
 	}
 	length = ntohl(length);
-	if ((send(sock, buffer, length, 0)) < 0)
+	if ((send(sock, buffer.c_str(), length, 0)) < 0)
 	{
 		cerr << "Message was not sent" << endl;
 		return false;
