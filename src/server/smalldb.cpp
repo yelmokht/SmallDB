@@ -15,6 +15,7 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <utility>
 
 #include "common.hpp"
 #include "db.hpp"
@@ -29,11 +30,12 @@ using namespace std;
 typedef struct
 {
 	int client_id;
+	int tid;
 	int sock;
 	database_t *db;
 } thread_args;
 
-vector<int> list_client, list_tid;
+vector<thread_args*> list_tid;
 
 /**
  * Create and configure the server socket
@@ -52,7 +54,7 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 void *service(void *args)
 {
 	thread_args *t_args = (thread_args *)args;
-	// cout << t_args->client_id << ":" << t_args->sock << endl;
+	cout << t_args->client_id << ":" << t_args->sock << endl;
 	//*Traitement de la requête
 	char buffer[1024];
 	uint32_t length;
@@ -62,8 +64,12 @@ void *service(void *args)
 			 << "(" << ntohl(length) << "): " << buffer << endl;
 		parse_and_execute(t_args->sock, t_args->db, buffer);
 	}
-	warnx("Client %d disconnected!", t_args->client_id);
-	list_client.erase(list_client.begin()+t_args->client_id-1);
+	int id = t_args->client_id;
+	warnx("Client %d disconnected! - %d socket", t_args->client_id, t_args->sock);
+	free(t_args);
+	cout << list_tid.size() << endl;
+	list_tid.erase(find(list_tid.begin(), list_tid.end(), NULL));
+	cout << list_tid.size() << endl;
 	return NULL;
 }
 
@@ -106,23 +112,22 @@ int main(int argc, char *argv[])
 	// Mise à l'écoute
 	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
 	warnx("Waiting client connection...");
-	listen(server_fd, 2);
+	listen(server_fd, 10);
 	// Acceptation
 	int new_socket;
 	size_t addrlen = sizeof(address);
 	while ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) > 0)
 	{
-		list_client.push_back(new_socket);
-		warnx("Client connected (%lu).", list_client.size());
 		pthread_t tid;
-		thread_args args;
-		list_tid.push_back(tid);
-		args.client_id = (int)list_tid.size();
-		args.sock = new_socket;
-		args.db = &db;
+		thread_args *args = (thread_args *)malloc(sizeof(thread_args));
+		args->client_id = (int)list_tid.size() + 1;
+		args->sock = new_socket;
+		args->db = &db;
 		// pthread_mask activé
-		pthread_create(&tid, NULL, service, &args);
+		args->tid = pthread_create(&tid, NULL, service, args);
 		// pthread_mask desactivé
+		list_tid.push_back(args);
+		warnx("Client connected (%lu).", list_tid.size());
 	}
 
 	if (new_socket == DISCONNECTED)
