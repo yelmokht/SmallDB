@@ -1,9 +1,18 @@
 #ifndef _QUERIES_HPP
 #define _QUERIES_HPP
 
+#include <pthread.h>
+#include <semaphore.h>
+
 #include <cstdio>
 
 #include "db.hpp"
+
+typedef struct
+{
+	pthread_mutex_t new_access, write_access, reader_registration;
+	int readers_c = 0;
+} mutex_t;
 
 // execute_* //////////////////////////////////////////////////////////////////
 
@@ -29,7 +38,7 @@ void parse_and_execute_insert(int fout, database_t* db, const char* const query)
 
 void parse_and_execute_delete(int fout, database_t* db, const char* const query);
 
-void parse_and_execute(int fout, database_t* db, const char* const query);
+void parse_and_execute(int fout, database_t* db, const char* const query, mutex_t *mutex);
 
 // query_fail_* ///////////////////////////////////////////////////////////////
 

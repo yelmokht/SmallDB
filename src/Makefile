@@ -6,12 +6,12 @@ SERVER=$(wildcard ./server/*.cpp)
 COBJECTS=$(CLIENT:.cpp=.o)
 SOBJECTS=$(SERVER:.cpp=.o)
 
-all: client_cpp smalldb_cpp
+all: sdbsh smalldb
 
-client_cpp: $(COBJECTS)
+sdbsh: $(COBJECTS)
 	$(CXX) -o $@ $(COBJECTS)
 
-smalldb_cpp: $(SOBJECTS)
+smalldb: $(SOBJECTS)
 	$(CXX) -o $@ $(SOBJECTS)
 
 	

@@ -45,6 +45,6 @@ bool sendSocket(int sock, string buffer)
 		cerr << "Message was not sent" << endl;
 		return false;
 	}
-	cout << "The message was successfully sent: " << buffer << "(" << length << ")" << endl;
+	//cout << "The message was successfully sent: " << buffer << "(" << length << ")" << endl;
 	return true;
 }

@@ -1,4 +1,9 @@
-#/usr/bin/bash
+#!/usr/bin/bash
+
+cd ../src/
+make clean
+make -B
+cd ../tests/
 
 if ! [ -e ../src/smalldb ] ; then
     echo "Pas d'exécutable smalldb"
@@ -17,7 +22,8 @@ for f in queries/*.txt ; do
     cp data/test_db.bin "${db}"
 
     echo ">>> lance le serveur"
-    ../src/smalldb "${db}" &
+    ../src/smalldb "${db}" & 
+    sleep 1 #ATTENTION DEBUG
     if ! pidof -q smalldb ; then
         echo "Impossible de lancer le serveur"
         exit 1

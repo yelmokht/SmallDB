@@ -99,7 +99,7 @@ void execute_delete(int fout, database_t *const db, const char *const field,
 	db->data.erase(new_end, db->data.end());
 	int new_size = db->data.size();
 	int diff = old_size - new_size;
-	std::string buffer = std::to_string(diff) + " student(s) deleted\n";
+	std::string buffer = std::to_string(diff) + " deleted student(s)\n";
 	sendSocket(fout, buffer);
 	sendSocket(fout, std::to_string(EOF));
 }
@@ -182,23 +182,48 @@ void parse_and_execute_delete(int fout, database_t *db, const char *const query)
 	}
 }
 
-void parse_and_execute(int fout, database_t *db, const char *const query)
+void parse_and_execute(int fout, database_t *db, const char *const query, mutex_t *mutex)
 {
 	if (strncmp("select", query, sizeof("select") - 1) == 0)
 	{
+		pthread_mutex_lock(&mutex->new_access);
+		pthread_mutex_lock(&mutex->reader_registration);
+		if (mutex->readers_c == 0)
+			pthread_mutex_lock(&mutex->new_access);
+		mutex->readers_c++;
+		pthread_mutex_unlock(&mutex->new_access);
+		pthread_mutex_unlock(&mutex->reader_registration);
 		parse_and_execute_select(fout, db, query);
+		pthread_mutex_lock(&mutex->reader_registration);
+		mutex->readers_c--;
+		if (mutex->readers_c == 0)
+			pthread_mutex_unlock(&mutex->write_access);
+		pthread_mutex_unlock(&mutex->reader_registration);
+
 	}
 	else if (strncmp("update", query, sizeof("update") - 1) == 0)
 	{
+		pthread_mutex_lock(&mutex->new_access);
+		pthread_mutex_lock(&mutex->write_access);
+		pthread_mutex_unlock(&mutex->new_access);
 		parse_and_execute_update(fout, db, query);
+		pthread_mutex_unlock(&mutex->write_access);
 	}
 	else if (strncmp("insert", query, sizeof("insert") - 1) == 0)
 	{
+		pthread_mutex_lock(&mutex->new_access);
+		pthread_mutex_lock(&mutex->write_access);
+		pthread_mutex_unlock(&mutex->new_access);
 		parse_and_execute_insert(fout, db, query);
+		pthread_mutex_unlock(&mutex->write_access);
 	}
 	else if (strncmp("delete", query, sizeof("delete") - 1) == 0)
 	{
+		pthread_mutex_lock(&mutex->new_access);
+		pthread_mutex_lock(&mutex->write_access);
+		pthread_mutex_unlock(&mutex->new_access);
 		parse_and_execute_delete(fout, db, query);
+		pthread_mutex_unlock(&mutex->write_access);
 	}
 	else
 	{

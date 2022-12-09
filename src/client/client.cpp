@@ -33,12 +33,12 @@ int main(int argc, char const *argv[])
       cout << "Trying connection with server..." << endl;
       sleep(1);
    }
-   cout << "Connexion established!" << endl;
+   //cout << "Connexion established!" << endl;
 
    // Récupérarion de la requête
    char buffer[1024];
    uint32_t length;
-   cout << ">";
+   //cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
       buffer[strlen(buffer) - 1] = '\0';
@@ -55,7 +55,7 @@ int main(int argc, char const *argv[])
 
       }
       memset(buffer,0,sizeof(buffer));
-      cout << ">";
+      //cout << ">";
    }
    close(sock);
    return 0;

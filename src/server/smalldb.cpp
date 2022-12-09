@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <err.h> // err
 #include <pthread.h>
+#include <semaphore.h>
 
 #include <string>
 #include <fstream>
@@ -35,7 +36,8 @@ typedef struct
 	database_t *db;
 } thread_args;
 
-vector<thread_args*> list_tid;
+vector<thread_args *> list_tid;
+mutex_t mutex;
 
 /**
  * Create and configure the server socket
@@ -54,11 +56,11 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 void disconnectClient(thread_args *t_args)
 {
 	int id = t_args->client_id;
-	warnx("Client %d disconnected.", t_args->client_id);
-	vector<thread_args*>::iterator t_args_iterator = find(list_tid.begin(), list_tid.end(), t_args);
+	//warnx("Client %d disconnected.", t_args->client_id);
+	vector<thread_args *>::iterator t_args_iterator = find(list_tid.begin(), list_tid.end(), t_args);
 	close(t_args->sock);
 	free(t_args);
-	list_tid.erase(t_args_iterator);	
+	list_tid.erase(t_args_iterator);
 }
 
 void *service(void *args)
@@ -69,9 +71,9 @@ void *service(void *args)
 	uint32_t length;
 	while ((recv_exactly(t_args->sock, (char *)&length, 4)) && (recv_exactly(t_args->sock, buffer, ntohl(length))))
 	{
-		cout << "Message reçu "
-			 << "(" << ntohl(length) << "): " << buffer << endl;
-		parse_and_execute(t_args->sock, t_args->db, buffer);
+		/* cout << "Message reçu "
+			 << "(" << ntohl(length) << "): " << buffer << endl; */
+		parse_and_execute(t_args->sock, t_args->db, buffer, &mutex);
 	}
 	disconnectClient(t_args);
 	return NULL;
@@ -109,13 +111,17 @@ int main(int argc, char *argv[])
 	database_t db;
 	char *db_path = argv[1];
 	db_load(&db, db_path);
+	//*Initialisation des mutex
+	pthread_mutex_init(&mutex.new_access, NULL);
+	pthread_mutex_init(&mutex.write_access, NULL);
+	pthread_mutex_init(&mutex.reader_registration, NULL);
 	// Création et paramétrage du socket
 	int server_fd;
 	struct sockaddr_in address;
 	createSocket(server_fd, address);
 	// Mise à l'écoute
 	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
-	warnx("Waiting client connection...");
+	//warnx("Waiting client connection...");
 	listen(server_fd, 10);
 	// Acceptation
 	int new_socket;
@@ -131,7 +137,7 @@ int main(int argc, char *argv[])
 		args->tid = pthread_create(&tid, NULL, service, args);
 		// pthread_mask desactivé
 		list_tid.push_back(args);
-		warnx("Client connected (%lu).", list_tid.size());
+		//warnx("Client connected (%lu).", list_tid.size());
 	}
 
 	if (new_socket == DISCONNECTED)
