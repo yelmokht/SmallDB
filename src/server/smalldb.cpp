@@ -51,10 +51,19 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 	address.sin_port = htons(28772);
 }
 
+void disconnectClient(thread_args *t_args)
+{
+	int id = t_args->client_id;
+	warnx("Client %d disconnected.", t_args->client_id);
+	vector<thread_args*>::iterator t_args_iterator = find(list_tid.begin(), list_tid.end(), t_args);
+	close(t_args->sock);
+	free(t_args);
+	list_tid.erase(t_args_iterator);	
+}
+
 void *service(void *args)
 {
 	thread_args *t_args = (thread_args *)args;
-	cout << t_args->client_id << ":" << t_args->sock << endl;
 	//*Traitement de la requête
 	char buffer[1024];
 	uint32_t length;
@@ -64,12 +73,7 @@ void *service(void *args)
 			 << "(" << ntohl(length) << "): " << buffer << endl;
 		parse_and_execute(t_args->sock, t_args->db, buffer);
 	}
-	int id = t_args->client_id;
-	warnx("Client %d disconnected! - %d socket", t_args->client_id, t_args->sock);
-	free(t_args);
-	cout << list_tid.size() << endl;
-	list_tid.erase(find(list_tid.begin(), list_tid.end(), NULL));
-	cout << list_tid.size() << endl;
+	disconnectClient(t_args);
 	return NULL;
 }
 
@@ -136,6 +140,5 @@ int main(int argc, char *argv[])
 	}
 
 	close(server_fd);
-	close(new_socket);
 	return 0;
 }
