@@ -56,7 +56,7 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 void disconnectClient(thread_args *t_args)
 {
 	int id = t_args->client_id;
-	//warnx("Client %d disconnected.", t_args->client_id);
+	// warnx("Client %d disconnected.", t_args->client_id);
 	vector<thread_args *>::iterator t_args_iterator = find(list_tid.begin(), list_tid.end(), t_args);
 	close(t_args->sock);
 	free(t_args);
@@ -101,6 +101,11 @@ void sendResults(int sock)
 	sendSocket(sock, buffer);
 }
 
+void handler(int signum)
+{
+	printf("Signal %d received", signum);
+}
+
 int main(int argc, char *argv[])
 {
 	//*Lancement de base de donnée
@@ -121,7 +126,7 @@ int main(int argc, char *argv[])
 	createSocket(server_fd, address);
 	// Mise à l'écoute
 	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
-	//warnx("Waiting client connection...");
+	// warnx("Waiting client connection...");
 	listen(server_fd, 10);
 	// Acceptation
 	int new_socket;
@@ -137,7 +142,7 @@ int main(int argc, char *argv[])
 		args->tid = pthread_create(&tid, NULL, service, args);
 		// pthread_mask desactivé
 		list_tid.push_back(args);
-		//warnx("Client connected (%lu).", list_tid.size());
+		// warnx("Client connected (%lu).", list_tid.size());
 	}
 
 	if (new_socket == DISCONNECTED)

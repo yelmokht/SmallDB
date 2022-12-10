@@ -15,15 +15,16 @@ if ! [ -e ../src/sdbsh ] ; then
     echo "Pas d'exécutable sdbsh"
     exit 2
 fi
-
+count=1
 for f in queries/*.txt ; do
+    echo -e "\n${count}/8"
     echo -e "\n>>> copie la BDD"
     db="data/$(date -Ins).bin"
     cp data/test_db.bin "${db}"
 
     echo ">>> lance le serveur"
     ../src/smalldb "${db}" & 
-    sleep 1 #ATTENTION DEBUG
+    sleep 1 #ATTETION DEBUG
     if ! pidof -q smalldb ; then
         echo "Impossible de lancer le serveur"
         exit 1
@@ -45,6 +46,7 @@ for f in queries/*.txt ; do
     else
         echo -e "\033[1;32mOK\033[0m"
     fi
+    ((count++))
 done
 
 if ! [ -e ../src/smalldbctl ] ; then

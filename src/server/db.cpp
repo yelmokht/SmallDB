@@ -68,7 +68,7 @@ void db_load(database_t *db, const char *path)
     err(FILE_ERROR, "Error while closing %s (after DB load)", path);
   }
 
-  printf("%lu students found in the db.\n", size);
+  //printf("%lu students found in the db.\n", size);
 
   // Le code ci-dessus n'est pas performant
   // à cause du trop grand nombre d'appel à read

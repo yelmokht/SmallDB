@@ -189,7 +189,7 @@ void parse_and_execute(int fout, database_t *db, const char *const query, mutex_
 		pthread_mutex_lock(&mutex->new_access);
 		pthread_mutex_lock(&mutex->reader_registration);
 		if (mutex->readers_c == 0)
-			pthread_mutex_lock(&mutex->new_access);
+			pthread_mutex_lock(&mutex->write_access);
 		mutex->readers_c++;
 		pthread_mutex_unlock(&mutex->new_access);
 		pthread_mutex_unlock(&mutex->reader_registration);
