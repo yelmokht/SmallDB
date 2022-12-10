@@ -6,5 +6,5 @@
 *.bin
 
 # Binary files
-smalldb
 sdbsh
+smalldb
