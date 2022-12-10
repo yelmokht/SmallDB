@@ -36,6 +36,7 @@ typedef struct
 	database_t *db;
 } thread_args;
 
+database_t *DB;
 vector<thread_args *> list_tid;
 mutex_t mutex;
 
@@ -103,7 +104,18 @@ void sendResults(int sock)
 
 void handler(int signum)
 {
-	printf("Signal %d received", signum);
+	if (signum == SIGUSR1) {
+		printf("Received SIGUSR1 signal !\n");
+		db_save(DB);
+		printf("DB saved successfully!\n");
+	}
+	if (signum == SIGINT) {
+		printf("\nReceived SIGINT signal !\n");
+		printf("Committing database changes to the disk...\n");
+		db_save(DB);
+		printf("Done.\n");
+		exit(0);
+	}
 }
 
 int main(int argc, char *argv[])
@@ -114,25 +126,45 @@ int main(int argc, char *argv[])
 		cout << "Paramètre obligatoire non fourni: chemin vers la db" << endl;
 	}
 	database_t db;
+	DB = &db;
 	char *db_path = argv[1];
 	db_load(&db, db_path);
-	//*Initialisation des mutex
+	// Signaux
+	struct sigaction action;
+	action.sa_handler = handler;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;
+	sigaction(SIGUSR1, &action, NULL);
+	sigaction(SIGINT, &action, NULL);
+
+	// Signaux à bloquer pour les threads fils
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGUSR1);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGTERM);
+
+	// Initialisation des mutex
 	pthread_mutex_init(&mutex.new_access, NULL);
 	pthread_mutex_init(&mutex.write_access, NULL);
 	pthread_mutex_init(&mutex.reader_registration, NULL);
+
 	// Création et paramétrage du socket
 	int server_fd;
 	struct sockaddr_in address;
 	createSocket(server_fd, address);
+
 	// Mise à l'écoute
 	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
 	// warnx("Waiting client connection...");
 	listen(server_fd, 10);
+
 	// Acceptation
 	int new_socket;
 	size_t addrlen = sizeof(address);
 	while ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) > 0)
 	{
+		sigprocmask(SIG_BLOCK, &mask, NULL);
 		pthread_t tid;
 		thread_args *args = (thread_args *)malloc(sizeof(thread_args));
 		args->client_id = (int)list_tid.size() + 1;
@@ -143,6 +175,7 @@ int main(int argc, char *argv[])
 		// pthread_mask desactivé
 		list_tid.push_back(args);
 		// warnx("Client connected (%lu).", list_tid.size());
+		sigprocmask(SIG_UNBLOCK, &mask, NULL);
 	}
 
 	if (new_socket == DISCONNECTED)

@@ -54,5 +54,5 @@ if [ $1 == "sync" ]; then
 	sync
 fi
 if [ $1 == "stop" ]; then
-	sync
+	stop
 fi
