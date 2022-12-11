@@ -16,6 +16,7 @@ if ! [ -e ../src/sdbsh ] ; then
     exit 2
 fi
 count=1
+
 for f in queries/*.txt ; do
     echo -e "\n${count}/8"
     echo -e "\n>>> copie la BDD"
@@ -24,7 +25,10 @@ for f in queries/*.txt ; do
 
     echo ">>> lance le serveur"
     ../src/smalldb "${db}" & 
-    sleep 1 #ATTETION DEBUG
+
+    #sleep 1 #!!!!!!!ATTETION DEBUG
+    #pidof smalldb #!!!! En demandant le pidof smalldb avant de pidof -q smalldb permet d'éviter l'erreur également.
+
     if ! pidof -q smalldb ; then
         echo "Impossible de lancer le serveur"
         exit 1

@@ -11,15 +11,29 @@
 
 using namespace std;
 
+int sock;
+
+void handler(int signum)
+{
+   if (signum == SIGPIPE)
+   {
+      cout << "Server connection lost..." << endl;
+      cout << "Closing client." << endl;
+      close(sock);
+      exit(1);
+   }
+}
+
 int main(int argc, char const *argv[])
 {
+   signal(SIGPIPE, handler);
    if (argc < 2)
    {
       printf("Paramètre IP obligatoire non indiqué.\n");
       exit(1);
    }
    // Création et Paramétrage du socket
-   int sock = socket(AF_INET, SOCK_STREAM, 0);
+   sock = socket(AF_INET, SOCK_STREAM, 0);
    struct sockaddr_in serv_addr;
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_port = htons(28772);
@@ -33,7 +47,7 @@ int main(int argc, char const *argv[])
       cout << "Trying connection with server..." << endl;
       sleep(1);
    }
-   //cout << "Connexion established!" << endl;
+   // cout << "Connexion established!" << endl;
 
    // Récupérarion de la requête
    char buffer[1024];
@@ -41,21 +55,21 @@ int main(int argc, char const *argv[])
    //cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
-      buffer[strlen(buffer) - 1] = '\0';
       // Envoi via socket
+      buffer[strlen(buffer) - 1] = '\0';
       if (!sendSocket(sock, buffer))
          cout << "Erreur sending message to server" << endl;
       // Attente de réponse
-      while((recv_exactly(sock, (char*)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
+      while ((recv_exactly(sock, (char *)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
       {
-         if (buffer == to_string(EOF)) {
+         if (buffer == to_string(EOF))
+         {
             break;
          }
          cout << buffer;
-
       }
-      memset(buffer,0,sizeof(buffer));
-      //cout << ">";
+      memset(buffer, 0, sizeof(buffer));
+      // cout << ">";
    }
    close(sock);
    return 0;

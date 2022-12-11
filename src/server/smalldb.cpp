@@ -25,19 +25,16 @@
 
 using namespace std;
 
-// TODO: Mieux diviser le code en helpers function pour réduire taille du main
-// TODO: Traitement d'erreur+
-
 typedef struct
 {
 	int client_id;
 	int tid;
 	int sock;
 	database_t *db;
-} thread_args;
+} client_t;
 
 database_t *DB;
-vector<thread_args *> list_tid;
+vector<client_t *> clients;
 mutex_t mutex;
 
 /**
@@ -54,29 +51,29 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 	address.sin_port = htons(28772);
 }
 
-void disconnectClient(thread_args *t_args)
+void disconnectClient(client_t *client)
 {
-	int id = t_args->client_id;
-	// warnx("Client %d disconnected.", t_args->client_id);
-	vector<thread_args *>::iterator t_args_iterator = find(list_tid.begin(), list_tid.end(), t_args);
-	close(t_args->sock);
-	free(t_args);
-	list_tid.erase(t_args_iterator);
+	int id = client->client_id;
+	// warnx("Client %d disconnected.", client->client_id);
+	vector<client_t *>::iterator client_iterator = find(clients.begin(), clients.end(), client);
+	close(client->sock);
+	free(client);
+	clients.erase(client_iterator);
 }
 
 void *service(void *args)
 {
-	thread_args *t_args = (thread_args *)args;
+	client_t *client = (client_t *)args;
 	//*Traitement de la requête
 	char buffer[1024];
 	uint32_t length;
-	while ((recv_exactly(t_args->sock, (char *)&length, 4)) && (recv_exactly(t_args->sock, buffer, ntohl(length))))
+	while ((recv_exactly(client->sock, (char *)&length, 4)) && (recv_exactly(client->sock, buffer, ntohl(length))))
 	{
 		/* cout << "Message reçu "
 			 << "(" << ntohl(length) << "): " << buffer << endl; */
-		parse_and_execute(t_args->sock, t_args->db, buffer, &mutex);
+		parse_and_execute(client->sock, client->db, buffer, &mutex);
 	}
-	disconnectClient(t_args);
+	disconnectClient(client);
 	return NULL;
 }
 
@@ -104,18 +101,52 @@ void sendResults(int sock)
 
 void handler(int signum)
 {
-	if (signum == SIGUSR1) {
-		printf("Received SIGUSR1 signal !\n");
+	switch (signum)
+	{
+	case SIGUSR1:
+		cout << "Received SIGUSR1 signal!" << endl;
 		db_save(DB);
-		printf("DB saved successfully!\n");
-	}
-	if (signum == SIGINT) {
-		printf("\nReceived SIGINT signal !\n");
-		printf("Committing database changes to the disk...\n");
+		cout << "DB saved successfully!" << endl;
+		break;
+	case SIGINT:
+		cout << endl
+			 << "Received SIGINT signal!" << endl;
+		cout << "Committing database changes to the disk..." << endl;
 		db_save(DB);
-		printf("Done.\n");
+		for (auto client : clients)
+		{
+			disconnectClient(client);
+		}
+		cout << "Done." << endl;
 		exit(0);
+		break;
+	default:
+		break;
 	}
+}
+
+void client_t_init(client_t *args, int sock, database_t *db)
+{
+	args->client_id = (int)clients.size() + 1;
+	args->sock = sock;
+	args->db = db;
+}
+
+void block_signals(sigset_t &mask)
+{
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGUSR1);
+	sigaddset(&mask, SIGINT);
+	sigaddset(&mask, SIGTERM);
+}
+
+void configure_signal_handler(struct sigaction &action)
+{
+	action.sa_handler = handler;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = SA_RESTART;
+	sigaction(SIGUSR1, &action, NULL);
+	sigaction(SIGINT, &action, NULL);
 }
 
 int main(int argc, char *argv[])
@@ -131,58 +162,36 @@ int main(int argc, char *argv[])
 	db_load(&db, db_path);
 	// Signaux
 	struct sigaction action;
-	action.sa_handler = handler;
-	sigemptyset(&action.sa_mask);
-	action.sa_flags = 0;
-	sigaction(SIGUSR1, &action, NULL);
-	sigaction(SIGINT, &action, NULL);
-
-	// Signaux à bloquer pour les threads fils
 	sigset_t mask;
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGUSR1);
-	sigaddset(&mask, SIGINT);
-	sigaddset(&mask, SIGTERM);
-
+	configure_signal_handler(action);
+	block_signals(mask); // Signaux à bloquer pour les threads fils
 	// Initialisation des mutex
 	pthread_mutex_init(&mutex.new_access, NULL);
 	pthread_mutex_init(&mutex.write_access, NULL);
 	pthread_mutex_init(&mutex.reader_registration, NULL);
-
 	// Création et paramétrage du socket
 	int server_fd;
 	struct sockaddr_in address;
 	createSocket(server_fd, address);
-
-	// Mise à l'écoute
-	bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+	bind(server_fd, (struct sockaddr *)&address, sizeof(address)); // Mise à l'écoute
 	// warnx("Waiting client connection...");
 	listen(server_fd, 10);
-
 	// Acceptation
 	int new_socket;
 	size_t addrlen = sizeof(address);
 	while ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) > 0)
 	{
-		sigprocmask(SIG_BLOCK, &mask, NULL);
 		pthread_t tid;
-		thread_args *args = (thread_args *)malloc(sizeof(thread_args));
-		args->client_id = (int)list_tid.size() + 1;
-		args->sock = new_socket;
-		args->db = &db;
-		// pthread_mask activé
+		client_t *args = (client_t *)malloc(sizeof(client_t));
+		client_t_init(args, new_socket, &db);
+		sigprocmask(SIG_BLOCK, &mask, NULL);
 		args->tid = pthread_create(&tid, NULL, service, args);
-		// pthread_mask desactivé
-		list_tid.push_back(args);
-		// warnx("Client connected (%lu).", list_tid.size());
 		sigprocmask(SIG_UNBLOCK, &mask, NULL);
+		clients.push_back(args);
+		// warnx("Client connected (%lu).", clients.size());
 	}
-
-	if (new_socket == DISCONNECTED)
-	{
-		err(NETWORK_ERROR, "Unnable to established connexion with client.\n");
-	}
-
+	perror("accept: ");
+	cout << "new_socket: "<< new_socket << endl;
 	close(server_fd);
 	return 0;
 }

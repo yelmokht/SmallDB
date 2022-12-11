@@ -1,0 +1,91 @@
+rm client/client.o client/common.o server/common.o server/db.o server/queries.o server/smalldb.o server/student.o
+g++    -c -o client/client.o client/client.cpp
+g++    -c -o client/common.o client/common.cpp
+g++ -o sdbsh ./client/client.o ./client/common.o
+g++    -c -o server/common.o server/common.cpp
+g++    -c -o server/db.o server/db.cpp
+g++    -c -o server/queries.o server/queries.cpp
+g++    -c -o server/smalldb.o server/smalldb.cpp
+g++    -c -o server/student.o server/student.cpp
+g++ -o smalldb ./server/common.o ./server/db.o ./server/queries.o ./server/smalldb.o ./server/student.o
+
+1/8
+
+>>> copie la BDD
+>>> lance le serveur
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m
+
+2/8
+
+>>> copie la BDD
+>>> lance le serveur
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m
+
+3/8
+
+>>> copie la BDD
+>>> lance le serveur
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m
+
+4/8
+
+>>> copie la BDD
+>>> lance le serveur
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m
+
+5/8
+
+>>> copie la BDD
+>>> lance le serveur
+56675
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m
+
+6/8
+
+>>> copie la BDD
+>>> lance le serveur
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m
+
+7/8
+
+>>> copie la BDD
+>>> lance le serveur
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m
+
+8/8
+
+>>> copie la BDD
+>>> lance le serveur
+>>> lance le client
+>>> tue le serveur
+>>> supprime la BDD temporaire
+>>> compare les résultats
+[1;32mOK[0m

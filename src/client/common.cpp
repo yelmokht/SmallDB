@@ -18,7 +18,6 @@ bool recv_exactly(int fd, char *buffer, int size)
 	{
 		i += recv_bytes;
 	}
-
 	if (recv_bytes < 0)
 	{
 		cerr << "recv_exactly()";
