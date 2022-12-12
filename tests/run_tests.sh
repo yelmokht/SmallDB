@@ -26,8 +26,7 @@ for f in queries/*.txt ; do
     echo ">>> lance le serveur"
     ../src/smalldb "${db}" & 
 
-    #sleep 1 #!!!!!!!ATTETION DEBUG
-    #pidof smalldb #!!!! En demandant le pidof smalldb avant de pidof -q smalldb permet d'éviter l'erreur également.
+    sleep 0.5
 
     if ! pidof -q smalldb ; then
         echo "Impossible de lancer le serveur"

@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +38,14 @@ database_t *DB;
 vector<client_t *> clients;
 mutex_t mutex;
 
+bool config_socket_opt(int sock)
+{
+	int opt = 1;
+	if ((setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0))
+		cerr << "Error: Socket options: " << endl;
+		return false;
+	return true;
+}
 /**
  * Create and configure the server socket
  */
@@ -44,8 +53,7 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 {
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	// Paramétrage du socket
-	int opt = 1;
-	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+	config_socket_opt(server_fd);
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
 	address.sin_port = htons(28772);
@@ -54,7 +62,7 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 void disconnectClient(client_t *client)
 {
 	int id = client->client_id;
-	// warnx("Client %d disconnected.", client->client_id);
+	warnx("Client %d disconnected (normal). Closing connection and thread", client->client_id);
 	vector<client_t *>::iterator client_iterator = find(clients.begin(), clients.end(), client);
 	close(client->sock);
 	free(client);
@@ -69,34 +77,10 @@ void *service(void *args)
 	uint32_t length;
 	while ((recv_exactly(client->sock, (char *)&length, 4)) && (recv_exactly(client->sock, buffer, ntohl(length))))
 	{
-		/* cout << "Message reçu "
-			 << "(" << ntohl(length) << "): " << buffer << endl; */
 		parse_and_execute(client->sock, client->db, buffer, &mutex);
 	}
 	disconnectClient(client);
 	return NULL;
-}
-
-/**
- * Reads results from file and send it through the socket
- */
-void sendResults(int sock)
-{
-	ifstream file("temp.txt");
-	string b;
-	char buffer[1024];
-	while (getline(file, b))
-	{
-		strcpy(buffer, b.c_str());
-		buffer[strlen(buffer)] = '\n';
-		if (!sendSocket(sock, buffer))
-		{
-			cerr << "Message not sent" << endl;
-		}
-	}
-	file.close();
-	sprintf(buffer, "%d", EOF);
-	sendSocket(sock, buffer);
 }
 
 void handler(int signum)
@@ -188,10 +172,8 @@ int main(int argc, char *argv[])
 		args->tid = pthread_create(&tid, NULL, service, args);
 		sigprocmask(SIG_UNBLOCK, &mask, NULL);
 		clients.push_back(args);
-		// warnx("Client connected (%lu).", clients.size());
+		warnx("Accepted connection (%d).", args->client_id);
 	}
-	perror("accept: ");
-	cout << "new_socket: "<< new_socket << endl;
 	close(server_fd);
 	return 0;
 }

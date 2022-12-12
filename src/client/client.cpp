@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <signal.h>
+
 #include <iostream>
 #include <string>
 
@@ -29,7 +30,7 @@ int main(int argc, char const *argv[])
    signal(SIGPIPE, handler);
    if (argc < 2)
    {
-      printf("Paramètre IP obligatoire non indiqué.\n");
+      cout << "Paramètre IP obligatoire non indiqué." << endl;
       exit(1);
    }
    // Création et Paramétrage du socket
@@ -47,12 +48,11 @@ int main(int argc, char const *argv[])
       cout << "Trying connection with server..." << endl;
       sleep(1);
    }
-   // cout << "Connexion established!" << endl;
-
+   cout << "Connexion established!" << endl;
    // Récupérarion de la requête
    char buffer[1024];
    uint32_t length;
-   //cout << ">";
+   cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
       // Envoi via socket
@@ -69,7 +69,7 @@ int main(int argc, char const *argv[])
          cout << buffer;
       }
       memset(buffer, 0, sizeof(buffer));
-      // cout << ">";
+      cout << ">";
    }
    close(sock);
    return 0;

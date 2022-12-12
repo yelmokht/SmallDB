@@ -20,7 +20,7 @@ bool recv_exactly(int fd, char *buffer, int size)
 	}
 	if (recv_bytes < 0)
 	{
-		cerr << "recv_exactly()";
+		cerr << "recv_exactly() client" << endl;
 	}
 	
 	return recv_bytes > 0;

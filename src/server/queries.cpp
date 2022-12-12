@@ -235,14 +235,14 @@ void parse_and_execute(int fout, database_t *db, const char *const query, mutex_
 
 void query_fail_bad_query_type(int fout)
 {
-	std::string buffer = "Query fail: Bad query type!";
+	std::string buffer = "Error: Bad query type!";
 	sendSocket(fout, buffer);
 	sendSocket(fout, std::to_string(EOF));
 }
 
 void query_fail_bad_format(int fout, const char *const query_type)
 {
-	std::string buffer = "Query fail: Bad format: ";
+	std::string buffer = "Error: Bad format: ";
 	buffer.append(query_type);
 	sendSocket(fout, buffer);
 	sendSocket(fout, std::to_string(EOF));
@@ -250,7 +250,7 @@ void query_fail_bad_format(int fout, const char *const query_type)
 
 void query_fail_too_long(int fout, const char *const query_type)
 {
-	std::string buffer = "Query fail: Bad too log: ";
+	std::string buffer = "Error: Bad too long: ";
 	buffer.append(query_type);
 	sendSocket(fout, buffer);
 	sendSocket(fout, std::to_string(EOF));
@@ -258,7 +258,7 @@ void query_fail_too_long(int fout, const char *const query_type)
 
 void query_fail_bad_filter(int fout, const char *const field, const char *const filter)
 {
-	std::string buffer = "Query fail: Bad filter: ";
+	std::string buffer = "Error: Bad filter: ";
 	buffer.append(field);
 	buffer.append(filter);
 	sendSocket(fout, buffer);
@@ -267,7 +267,7 @@ void query_fail_bad_filter(int fout, const char *const field, const char *const 
 
 void query_fail_bad_update(int fout, const char *const field, const char *const filter)
 {
-	std::string buffer = "Query fail: Bad update: ";
+	std::string buffer = "Error: Bad update: ";
 	buffer.append(field);
 	buffer.append(filter);
 	sendSocket(fout, buffer);
