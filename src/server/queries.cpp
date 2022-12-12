@@ -8,7 +8,7 @@
 
 #include "student.hpp"
 #include "queries.hpp"
-#include "common.hpp"
+#include "../common.hpp"
 
 // execute_* ///////////////////////////////////////////////////////////////////
 

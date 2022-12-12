@@ -8,7 +8,7 @@
 #include <iostream>
 #include <string>
 
-#include "common.hpp"
+#include "../common.hpp"
 
 using namespace std;
 

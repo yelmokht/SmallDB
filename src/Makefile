@@ -6,14 +6,15 @@ CLIENT=$(wildcard ./client/*.cpp)
 SERVER=$(wildcard ./server/*.cpp)
 COBJECTS=$(CLIENT:.cpp=.o)
 SOBJECTS=$(SERVER:.cpp=.o)
+COMOBJECTS=common.o
 
 all: sdbsh smalldb
 
-sdbsh: $(COBJECTS)
-	$(CXX) -o $@ $(COBJECTS) $(FLAGS)
+sdbsh: $(COBJECTS) $(COMOBJECTS)
+	$(CXX) -o $@ $(COBJECTS) $(COMOBJECTS) $(FLAGS)
 
-smalldb: $(SOBJECTS)
-	$(CXX) -o $@ $(SOBJECTS) $(FLAGS)
+smalldb: $(SOBJECTS) $(COMOBJECTS)
+	$(CXX) -o $@ $(SOBJECTS) $(COMOBJECTS) $(FLAGS)
 
 	
 /%.o: %.cpp %.hpp

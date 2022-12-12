@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "common.hpp"
+#include "../common.hpp"
 #include "db.hpp"
 #include "queries.hpp"
 #include "errorcodes.hpp"
