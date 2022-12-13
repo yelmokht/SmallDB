@@ -93,9 +93,10 @@ void *service(void *args)
 {
 	client_t *client = (client_t *)args;
 	//*Traitement de la requête
-	char buffer[1024];
+	char buffer[128];
 	uint32_t length;
-	while ((recv_exactly(client->sock, (char *)&length, 4)) && (recv_exactly(client->sock, buffer, ntohl(length))))
+	//(recv_exactly(client->sock, (char *)&length, 4)) && 
+	while ((recv_exactly(client->sock, buffer, 128)))
 	{
 		if (strcmp(buffer, "DISCONNECTED") == 0)
 		{

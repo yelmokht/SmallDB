@@ -62,7 +62,7 @@ int main(int argc, char const *argv[])
    }
    cout << "Connexion established!" << endl;
    // Récupérarion de la requête
-   char buffer[1024];
+   char buffer[128];
    uint32_t length;
    cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
@@ -72,14 +72,14 @@ int main(int argc, char const *argv[])
       if (!sendSocket(sock, buffer))
          cout << "Erreur sending message to server" << endl;
       // Attente de réponse
-      while ((recv_exactly(sock, (char *)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
+      //(recv_exactly(sock, (char *)&length, 4)) && 
+      while ((recv_exactly(sock, buffer, 128)))
       {
          if (strcmp(buffer, "-1") == 0)
          {
             break;
          }
-         cout << buffer << " "
-              << "(" << ntohl(length) << ")" << endl;
+         cout << buffer;
       }
       memset(buffer, 0, sizeof(buffer));
       cout << ">";

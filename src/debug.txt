@@ -1,0 +1,4 @@
+
+Received SIGINT signal!
+Committing database changes to the disk...
+Done.

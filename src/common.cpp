@@ -35,15 +35,15 @@ bool recv_exactly(int fd, char *buffer, int size)
  */
 bool sendSocket(int sock, char *buffer)
 {
-	uint32_t length = strlen(buffer) + 1;
-	length = htonl(length);
+	int length = strlen(buffer) + 1;
+	/* length = htonl(length);
 	if ((send(sock, &length, sizeof(4), 0)) < 0)
 	{
 		cerr << "Message length was not sent" << endl;
 		return false;
 	}
-	length = ntohl(length);
-	if ((send(sock, buffer, length, 0)) < 0)
+	length = ntohl(length); */
+	if ((send(sock, buffer, 128, 0)) < 0)
 	{
 		cerr << "Message was not sent" << endl;
 		return false;
