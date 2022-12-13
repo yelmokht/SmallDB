@@ -22,15 +22,14 @@
 #include "../common.hpp"
 #include "db.hpp"
 #include "queries.hpp"
-#include "errorcodes.hpp"
 
 using namespace std;
 
 typedef struct
 {
 	int client_id;
-	int tid;
 	int sock;
+	pthread_t tid;
 	database_t *db;
 } client_t;
 
@@ -41,9 +40,11 @@ mutex_t mutex;
 bool config_socket_opt(int sock)
 {
 	int opt = 1;
-	if ((setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0))
+	if ((setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT | TCP_CONGESTION, &opt, sizeof(opt)) < 0))
+	{
 		cerr << "Error: Socket options: " << endl;
 		return false;
+	}
 	return true;
 }
 /**
@@ -59,14 +60,33 @@ void createSocket(int &server_fd, struct sockaddr_in &address)
 	address.sin_port = htons(28772);
 }
 
-void disconnectClient(client_t *client)
+void closeClientSocket(client_t *client)
 {
-	int id = client->client_id;
-	warnx("Client %d disconnected (normal). Closing connection and thread", client->client_id);
-	vector<client_t *>::iterator client_iterator = find(clients.begin(), clients.end(), client);
 	close(client->sock);
+}
+
+void closeClientThread(client_t *client)
+{
+	vector<client_t *>::iterator client_iterator = find(clients.begin(), clients.end(), client);
+	pthread_cancel(client->tid);
 	free(client);
 	clients.erase(client_iterator);
+}
+
+void disconnectClient(client_t *client)
+{
+	warnx("Client %d disconnected (normal). Closing connection and thread", client->client_id);
+	closeClientSocket(client);
+	closeClientThread(client);
+}
+
+void lostClientConnexion(client_t *client)
+{
+	warnx("Lost connection to client %d ", client->client_id);
+	warnx("Closing connection %d ", client->client_id);
+	closeClientSocket(client);
+	warnx("Closing Thread for connection %d ", client->client_id);
+	closeClientThread(client);
 }
 
 void *service(void *args)
@@ -77,9 +97,14 @@ void *service(void *args)
 	uint32_t length;
 	while ((recv_exactly(client->sock, (char *)&length, 4)) && (recv_exactly(client->sock, buffer, ntohl(length))))
 	{
+		if (strcmp(buffer, "DISCONNECTED") == 0)
+		{
+			disconnectClient(client);
+			return NULL;
+		}
 		parse_and_execute(client->sock, client->db, buffer, &mutex);
 	}
-	disconnectClient(client);
+	lostClientConnexion(client);
 	return NULL;
 }
 
@@ -93,14 +118,14 @@ void handler(int signum)
 		cout << "DB saved successfully!" << endl;
 		break;
 	case SIGINT:
-		cout << endl
-			 << "Received SIGINT signal!" << endl;
-		cout << "Committing database changes to the disk..." << endl;
-		db_save(DB);
+		cout << "\nReceived SIGINT signal!" << endl;
 		for (auto client : clients)
 		{
+			warnx("Disconnecting client %d...", client->client_id);
 			disconnectClient(client);
 		}
+		cout << "Committing database changes to the disk..." << endl;
+		db_save(DB);
 		cout << "Done." << endl;
 		exit(0);
 		break;
@@ -109,11 +134,12 @@ void handler(int signum)
 	}
 }
 
-void client_t_init(client_t *args, int sock, database_t *db)
+void client_t_init(client_t *args, int sock, database_t *db, pthread_t &tid)
 {
 	args->client_id = (int)clients.size() + 1;
 	args->sock = sock;
 	args->db = db;
+	args->tid = tid;
 }
 
 void block_signals(sigset_t &mask)
@@ -167,9 +193,11 @@ int main(int argc, char *argv[])
 	{
 		pthread_t tid;
 		client_t *args = (client_t *)malloc(sizeof(client_t));
-		client_t_init(args, new_socket, &db);
+		client_t_init(args, new_socket, &db, tid);
 		sigprocmask(SIG_BLOCK, &mask, NULL);
-		args->tid = pthread_create(&tid, NULL, service, args);
+		if (pthread_create(&tid, NULL, service, args) < 0)
+			cerr << "Error: pthread " << endl;
+		args->tid = tid;
 		sigprocmask(SIG_UNBLOCK, &mask, NULL);
 		clients.push_back(args);
 		warnx("Accepted connection (%d).", args->client_id);

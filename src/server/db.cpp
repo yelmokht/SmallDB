@@ -1,4 +1,5 @@
 #include "db.hpp"
+#include "errorcodes.hpp"
 
 #include <err.h>      // err
 #include <fcntl.h>    // open
@@ -11,7 +12,6 @@
 #include <utility>   // std::move
 #include <iostream>
 
-#include "errorcodes.hpp"
 
 void db_load(database_t *db, const char *path)
 {

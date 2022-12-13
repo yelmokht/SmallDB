@@ -18,12 +18,14 @@ bool recv_exactly(int fd, char *buffer, int size)
 	{
 		i += recv_bytes;
 	}
-
 	if (recv_bytes < 0)
 	{
-		cerr << "recv_exactly() server";
+		cout << endl
+			 << "Buffer: " << endl
+			 << buffer << "(" << size << ")" << endl;
+		cerr << "recv_exactly(): " << strerror(errno)
+			 << " " << errno << " " << strerrorname_np(errno);
 	}
-	
 	return recv_bytes > 0;
 }
 
@@ -32,7 +34,7 @@ bool recv_exactly(int fd, char *buffer, int size)
  */
 bool sendSocket(int sock, string buffer)
 {
-	uint32_t length = buffer.size() +1;
+	uint32_t length = buffer.size() + 1;
 	length = htonl(length);
 	if ((send(sock, &length, sizeof(length), 0)) < 0)
 	{
@@ -45,6 +47,6 @@ bool sendSocket(int sock, string buffer)
 		cerr << "Message was not sent" << endl;
 		return false;
 	}
-	//cout << "The message was successfully sent: " << buffer << "(" << length << ")" << endl;
+	// cout << "The message was successfully sent: " << buffer << "(" << length << ")" << endl;
 	return true;
 }

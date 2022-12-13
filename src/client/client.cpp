@@ -16,18 +16,30 @@ int sock;
 
 void handler(int signum)
 {
-   if (signum == SIGPIPE)
+   switch (signum)
    {
+   case SIGPIPE:
       cout << "Server connection lost..." << endl;
       cout << "Closing client." << endl;
       close(sock);
       exit(1);
+      break;
+   case SIGINT:
+      cout << endl
+           << "Closing client" << endl;
+      sendSocket(sock, "DISCONNECTED");
+      close(sock);
+      exit(0);
+      break;
+   default:
+      break;
    }
 }
 
 int main(int argc, char const *argv[])
 {
    signal(SIGPIPE, handler);
+   signal(SIGINT, handler);
    if (argc < 2)
    {
       cout << "Paramètre IP obligatoire non indiqué." << endl;
@@ -62,11 +74,11 @@ int main(int argc, char const *argv[])
       // Attente de réponse
       while ((recv_exactly(sock, (char *)&length, 4)) && (recv_exactly(sock, buffer, ntohl(length))))
       {
-         if (buffer == to_string(EOF))
+         if (strcmp(buffer, "-1") == 0)
          {
             break;
          }
-         cout << buffer;
+         cout << buffer << " " << "(" << ntohl(length) << ")" << endl;
       }
       memset(buffer, 0, sizeof(buffer));
       cout << ">";
