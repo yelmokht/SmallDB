@@ -97,11 +97,13 @@ void execute_delete(int fout, database_t *const db, const char *const field,
 	int old_size = db->data.size();
 	auto new_end = remove_if(db->data.begin(), db->data.end(), predicate);
 	db->data.erase(new_end, db->data.end());
+	//Display
 	int new_size = db->data.size();
 	int diff = old_size - new_size;
-	std::string buffer = std::to_string(diff) + " deleted student(s)\n";
+	char buffer[512];
+	sprintf(buffer, "%d student(s) deleted\n", diff);
 	sendSocket(fout, buffer);
-	sendSocket(fout, std::to_string(EOF));
+	sendSocket(fout, (char*)EOF);
 }
 
 // parse_and_execute_* ////////////////////////////////////////////////////////
@@ -235,41 +237,39 @@ void parse_and_execute(int fout, database_t *db, const char *const query, mutex_
 
 void query_fail_bad_query_type(int fout)
 {
-	std::string buffer = "Error: Bad query type!";
+	char buffer[] = "Error: Bad query type!";
 	sendSocket(fout, buffer);
-	sendSocket(fout, std::to_string(EOF));
+	sendSocket(fout, (char*)EOF);
 }
 
 void query_fail_bad_format(int fout, const char *const query_type)
 {
-	std::string buffer = "Error: Bad format: ";
-	buffer.append(query_type);
+	char buffer[512];
+	sprintf(buffer, "Error: Bad format: %s", query_type);
 	sendSocket(fout, buffer);
-	sendSocket(fout, std::to_string(EOF));
+	sendSocket(fout, (char*)EOF);
 }
 
 void query_fail_too_long(int fout, const char *const query_type)
 {
-	std::string buffer = "Error: Bad too long: ";
-	buffer.append(query_type);
+	char buffer[512];
+	sprintf(buffer, "Error: Bad too long: %s", query_type);
 	sendSocket(fout, buffer);
-	sendSocket(fout, std::to_string(EOF));
+	sendSocket(fout, (char*)EOF);
 }
 
 void query_fail_bad_filter(int fout, const char *const field, const char *const filter)
 {
-	std::string buffer = "Error: Bad filter: ";
-	buffer.append(field);
-	buffer.append(filter);
+	char buffer[512];
+	sprintf(buffer, "Error: Bad filter: %s=%s", field, filter);
 	sendSocket(fout, buffer);
-	sendSocket(fout, std::to_string(EOF));
+	sendSocket(fout, (char*)EOF);
 }
 
 void query_fail_bad_update(int fout, const char *const field, const char *const filter)
 {
-	std::string buffer = "Error: Bad update: ";
-	buffer.append(field);
-	buffer.append(filter);
+	char buffer[512];
+	sprintf(buffer, "Error: Bad update: %s=%s", field, filter);
 	sendSocket(fout, buffer);
-	sendSocket(fout, std::to_string(EOF));
+	sendSocket(fout, (char*)EOF);
 }

@@ -8,6 +8,7 @@
 #include <iostream>
 
 using namespace std;
+
 /**
  * Reads the exactly number of bytes (size)
  */
@@ -32,17 +33,17 @@ bool recv_exactly(int fd, char *buffer, int size)
 /**
  * Send the size of the string and then the string through a socket
  */
-bool sendSocket(int sock, string buffer)
+bool sendSocket(int sock, char *buffer)
 {
-	uint32_t length = buffer.size() + 1;
+	uint32_t length = strlen(buffer) + 1;
 	length = htonl(length);
-	if ((send(sock, &length, sizeof(length), 0)) < 0)
+	if ((send(sock, &length, sizeof(4), 0)) < 0)
 	{
 		cerr << "Message length was not sent" << endl;
 		return false;
 	}
 	length = ntohl(length);
-	if ((send(sock, buffer.c_str(), length, 0)) < 0)
+	if ((send(sock, buffer, length, 0)) < 0)
 	{
 		cerr << "Message was not sent" << endl;
 		return false;

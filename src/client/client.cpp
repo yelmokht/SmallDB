@@ -27,7 +27,7 @@ void handler(int signum)
    case SIGINT:
       cout << endl
            << "Closing client" << endl;
-      sendSocket(sock, "DISCONNECTED");
+      sendSocket(sock, (char*)("DISCONNECTED"));
       close(sock);
       exit(0);
       break;
@@ -78,7 +78,8 @@ int main(int argc, char const *argv[])
          {
             break;
          }
-         cout << buffer << " " << "(" << ntohl(length) << ")" << endl;
+         cout << buffer << " "
+              << "(" << ntohl(length) << ")" << endl;
       }
       memset(buffer, 0, sizeof(buffer));
       cout << ">";

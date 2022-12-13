@@ -7,6 +7,6 @@
 
 bool recv_exactly(int fd, char *buffer, int size);
 
-bool sendSocket(int sock, std::string buffer);
+bool sendSocket(int sock, char *buffer);
 
 #endif  // __COMMON_H
