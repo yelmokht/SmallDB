@@ -14,7 +14,7 @@
 
 void execute_select(int fout, database_t *const db, const char *const field, const char *const value)
 {
-	char buffer[512];
+	char buffer[BUFFER_SIZE];
 	int count = 0;
 	std::function<bool(const student_t &)> predicate = get_filter(field, value);
 	if (!predicate)
@@ -26,20 +26,21 @@ void execute_select(int fout, database_t *const db, const char *const field, con
 	{
 		if (predicate(s))
 		{
+			// Génération du message partielle
 			student_to_str(buffer, &s, sizeof(buffer));
-			sendSocket(fout, buffer);
+			send_message(fout, buffer);
 			++count;
 		}
 	}
+	// Génération du message
 	sprintf(buffer, "%d student(s) selected\n", count);
-	sendSocket(fout, buffer);
-	sprintf(buffer, "%d", EOF);
-	sendSocket(fout, buffer);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }
 
 void execute_update(int fout, database_t *const db, const char *const ffield, const char *const fvalue, const char *const efield, const char *const evalue)
 {
-	char buffer[512];
+	char buffer[BUFFER_SIZE];
 	int count = 0;
 	std::function<bool(const student_t &)> predicate = get_filter(ffield, fvalue);
 	if (!predicate)
@@ -61,10 +62,10 @@ void execute_update(int fout, database_t *const db, const char *const ffield, co
 			++count;
 		}
 	}
+	// Génération du message
 	sprintf(buffer, "%d student(s) updated\n", count);
-	sendSocket(fout, buffer);
-	sprintf(buffer, "%d", EOF);
-	sendSocket(fout, buffer);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }
 
 void execute_insert(int fout, database_t *const db, const char *const fname,
@@ -78,11 +79,12 @@ void execute_insert(int fout, database_t *const db, const char *const fname,
 	snprintf(s->lname, sizeof(s->lname), "%s", lname);
 	snprintf(s->section, sizeof(s->section), "%s", section);
 	s->birthdate = birthdate;
-	char buffer[512];
+	// Génération du message
+	char buffer[BUFFER_SIZE];
 	student_to_str(buffer, s, sizeof(buffer));
-	sendSocket(fout, buffer);
-	sprintf(buffer, "%d", EOF);
-	sendSocket(fout, buffer);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
+
 }
 
 void execute_delete(int fout, database_t *const db, const char *const field,
@@ -97,13 +99,13 @@ void execute_delete(int fout, database_t *const db, const char *const field,
 	int old_size = db->data.size();
 	auto new_end = remove_if(db->data.begin(), db->data.end(), predicate);
 	db->data.erase(new_end, db->data.end());
-	//Display
+	//Génération du message 
 	int new_size = db->data.size();
 	int diff = old_size - new_size;
-	char buffer[512];
+	char buffer[BUFFER_SIZE];
 	sprintf(buffer, "%d student(s) deleted\n", diff);
-	sendSocket(fout, buffer);
-	sendSocket(fout, (char*)EOF);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }
 
 // parse_and_execute_* ////////////////////////////////////////////////////////
@@ -201,7 +203,6 @@ void parse_and_execute(int fout, database_t *db, const char *const query, mutex_
 		if (mutex->readers_c == 0)
 			pthread_mutex_unlock(&mutex->write_access);
 		pthread_mutex_unlock(&mutex->reader_registration);
-
 	}
 	else if (strncmp("update", query, sizeof("update") - 1) == 0)
 	{
@@ -237,39 +238,39 @@ void parse_and_execute(int fout, database_t *db, const char *const query, mutex_
 
 void query_fail_bad_query_type(int fout)
 {
-	char buffer[] = "Error: Bad query type!";
-	sendSocket(fout, buffer);
-	sendSocket(fout, (char*)EOF);
+	char buffer[] = "Error: Bad query type!\n";
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }
 
 void query_fail_bad_format(int fout, const char *const query_type)
 {
-	char buffer[512];
-	sprintf(buffer, "Error: Bad format: %s", query_type);
-	sendSocket(fout, buffer);
-	sendSocket(fout, (char*)EOF);
+	char buffer[BUFFER_SIZE];
+	sprintf(buffer, "Error: Bad format: %s\n", query_type);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }
 
 void query_fail_too_long(int fout, const char *const query_type)
 {
-	char buffer[512];
-	sprintf(buffer, "Error: Bad too long: %s", query_type);
-	sendSocket(fout, buffer);
-	sendSocket(fout, (char*)EOF);
+	char buffer[BUFFER_SIZE];
+	sprintf(buffer, "Error: Bad too long: %s\n", query_type);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }
 
 void query_fail_bad_filter(int fout, const char *const field, const char *const filter)
 {
-	char buffer[512];
-	sprintf(buffer, "Error: Bad filter: %s=%s", field, filter);
-	sendSocket(fout, buffer);
-	sendSocket(fout, (char*)EOF);
+	char buffer[BUFFER_SIZE];
+	sprintf(buffer, "Error: Bad filter: %s=%s\n", field, filter);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }
 
 void query_fail_bad_update(int fout, const char *const field, const char *const filter)
 {
-	char buffer[512];
-	sprintf(buffer, "Error: Bad update: %s=%s", field, filter);
-	sendSocket(fout, buffer);
-	sendSocket(fout, (char*)EOF);
+	char buffer[BUFFER_SIZE];
+	sprintf(buffer, "Error: Bad update: %s=%s\n", field, filter);
+	send_message(fout, buffer);
+	send_message(fout, (char *)END_OF_MESSAGE);
 }

@@ -39,5 +39,8 @@
         "utility": "cpp",
         "iostream": "cpp",
         "fstream": "cpp"
+    },
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
     }
 }

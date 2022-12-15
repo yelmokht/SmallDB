@@ -2,11 +2,21 @@
 #define __COMMON_H
 
 #include <unistd.h>
+
 #include <string>
 
+//Indique la fin de toutes les messages
+#define END_OF_MESSAGE "-1"
+//Taille du buffer d'échange de message
+#define BUFFER_SIZE 256
 
-bool recv_exactly(int fd, char *buffer, int size);
+// The macro allows us to retrieve the name of the calling function
+#define checked(call) _checked(call, #call)
 
-bool sendSocket(int sock, char *buffer);
+int _checked(int ret, std::string calling_function);
+
+bool recv_message(int fd, char *buffer);
+
+bool send_message(int sock, char *buffer);
 
 #endif  // __COMMON_H

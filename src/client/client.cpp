@@ -27,7 +27,7 @@ void handler(int signum)
    case SIGINT:
       cout << endl
            << "Closing client" << endl;
-      sendSocket(sock, (char*)("DISCONNECTED"));
+      send_message(sock, (char*)("DISCONNECTED"));
       close(sock);
       exit(0);
       break;
@@ -69,13 +69,13 @@ int main(int argc, char const *argv[])
    {
       // Envoi via socket
       buffer[strlen(buffer) - 1] = '\0';
-      if (!sendSocket(sock, buffer))
+      if (!send_message(sock, buffer))
          cout << "Erreur sending message to server" << endl;
       // Attente de réponse
-      //(recv_exactly(sock, (char *)&length, 4)) && 
-      while ((recv_exactly(sock, buffer, 128)))
+      //(recv_message(sock, (char *)&length, 4)) && 
+      while ((recv_message(sock, buffer)))
       {
-         if (strcmp(buffer, "-1") == 0)
+         if (strcmp(buffer, END_OF_MESSAGE) == 0)
          {
             break;
          }

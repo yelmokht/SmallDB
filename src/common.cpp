@@ -9,45 +9,47 @@
 
 using namespace std;
 
-/**
- * Reads the exactly number of bytes (size)
- */
-bool recv_exactly(int fd, char *buffer, int size)
+int _checked(int ret, std::string calling_function)
 {
-	int recv_bytes, i = 0;
-	while (i < size && (recv_bytes = recv(fd, buffer, size - i, 0)) > 0)
+	if (ret < 0)
 	{
-		i += recv_bytes;
+		perror(calling_function.c_str());
+		exit(EXIT_FAILURE);
 	}
-	if (recv_bytes < 0)
+	return ret;
+}
+
+/**
+ *
+ * @brief Reçoit un message de BUFFER_SIZE bytes
+ *
+ * @param fd Socket émetteur de message
+ * @param buffer Buffer pour stocker message de taille BUFFER_SIZE
+ * @return true Message reçu
+ * @return false Connexion perdue ou error
+ */
+bool recv_message(int fd, char *buffer)
+{
+	int recv_bytes;
+	if ((recv_bytes = recv(fd, buffer, BUFFER_SIZE, 0)) < 0)
 	{
-		cout << endl
-			 << "Buffer: " << endl
-			 << buffer << "(" << size << ")" << endl;
-		cerr << "recv_exactly(): " << strerror(errno)
-			 << " " << errno << " " << strerrorname_np(errno);
+		cerr << "Error: recv_message(): " << strerrorname_np(errno) << endl;
 	}
 	return recv_bytes > 0;
 }
 
 /**
- * Send the size of the string and then the string through a socket
+ * @brief Envois un message de BUFFER_SIZE bytes
+ *
+ * @param sock Socket récepteur du message
+ * @param buffer Message à envoyer de taille BUFFER_SIZE
+ * @return true: Message envoyé
+ * @return false: Connexion perdue ou error
  */
-bool sendSocket(int sock, char *buffer)
+bool send_message(int sock, char *buffer)
 {
-	int length = strlen(buffer) + 1;
-	/* length = htonl(length);
-	if ((send(sock, &length, sizeof(4), 0)) < 0)
-	{
-		cerr << "Message length was not sent" << endl;
-		return false;
-	}
-	length = ntohl(length); */
-	if ((send(sock, buffer, 128, 0)) < 0)
-	{
-		cerr << "Message was not sent" << endl;
-		return false;
-	}
-	// cout << "The message was successfully sent: " << buffer << "(" << length << ")" << endl;
-	return true;
+	int sent_bytes;
+	if ((sent_bytes = send(sock, buffer, BUFFER_SIZE, 0)) < 0)
+		cerr << "Error: send_message(): " << strerrorname_np(errno) << endl;
+	return sent_bytes > 0;
 }
