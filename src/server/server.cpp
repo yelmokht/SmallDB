@@ -1,5 +1,5 @@
 #include <arpa/inet.h>
-#include <err.h> // err
+#include <err.h>
 #include <netinet/tcp.h>
 #include <semaphore.h>
 #include <signal.h>
@@ -11,22 +11,22 @@
 
 #include <algorithm>
 #include <cstring>
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-#include <deque>
 
 #include "../common.hpp"
 #include "server.hpp"
 
 using namespace std;
-
-database_t *DB;
-vector<client_t *> clients;
-mutex_t mutex;
+// Variables globales pour permettre au handler de signal d'y avoir accès
+database_t *DB;				// Pointeur vers la base de donnée
+vector<client_t *> clients; // Liste de tous les client connectés
+mutex_t mutex;				// Structure contenant tous les mutex du mécanisme de synchronisme
 
 void config_socket_opt(int sock)
 {
@@ -41,6 +41,10 @@ void close_client_socket(client_t *client)
 
 void close_client_thread(client_t *client)
 {
+	/**
+	 * Localise le client dans la liste de client, sauvegarde le tid du thread client responsable de géré ce client,
+	 * libère la mémoire allouée à la structure client_t, supprime le client de la liste et termine le thread fils.
+	 */
 	vector<client_t *>::iterator client_iterator = find(clients.begin(), clients.end(), client);
 	pthread_t tid_save = client->tid;
 	free(client);
@@ -68,15 +72,15 @@ void handler(int signum)
 {
 	switch (signum)
 	{
-	case SIGUSR1:
+	case SIGUSR1: // Signal de sauvegarde
 		cout << "Received SIGUSR1 signal!" << endl;
 		db_save(DB);
 		cout << "DB saved successfully!" << endl;
 		break;
-	case SIGINT:
+	case SIGINT: // Signal d'interruption du processus
 		cout << "\nReceived SIGINT signal!" << endl;
 		for (auto client : clients)
-		{
+		{ // Disconnecter tous les clients
 			warnx("Disconnecting client %d...", client->client_id);
 			server_disconnect_client(client);
 		}
@@ -141,30 +145,31 @@ void *client_thread(void *args)
 	char buffer[BUFFER_SIZE];
 	while (true)
 	{
-		switch(client->status) {
-			case CLIENT_CONNECTED :
-			if (!recv_message(client->sock, buffer)) {
-				client->status = CLIENT_LOST_CONNECTION;
+		switch (client->status)
+		{
+		case CLIENT_CONNECTED:
+			if (!recv_message(client->sock, buffer)) // Réception de la requête
+			{
+				client->status = CLIENT_LOST_CONNECTION; // Erreur dans le socket => Perte de connexion
 				break;
 			}
-			if (strcmp(buffer, DISCONNECT_MESSAGE) == 0)
+			if (strcmp(buffer, DISCONNECT_MESSAGE) == 0) // Client se déconnecte intentionnelle
 			{
 				client->status = CLIENT_DISCONNECTED;
 				break;
 			}
-			messages = parse_and_execute(client->sock, client->db, buffer, &mutex);
-			send_protocol(client, messages);
-				break;
-			case CLIENT_DISCONNECTED :
-				server_disconnect_client(client);
-				return NULL;
-				break;
-			case CLIENT_LOST_CONNECTION :
-				server_lost_client_connection(client);
-				return NULL;
-				break;
-			default :
-				break;
+			messages = parse_and_execute(client->sock, client->db, buffer, &mutex); // Génération des messages
+			send_protocol(client, messages);										// Envoi des messages vers le client
+			messages.clear();														// Supprime les messages envoyées
+			break;
+		case CLIENT_DISCONNECTED:
+			server_disconnect_client(client);
+			return NULL;
+		case CLIENT_LOST_CONNECTION:
+			server_lost_client_connection(client);
+			return NULL;
+		default:
+			break;
 		}
 	}
 	return NULL;
@@ -189,7 +194,7 @@ int server_run(server_t *server)
 		int new_socket = checked(accept(server->sock, (struct sockaddr *)&address, (socklen_t *)&addrlen));
 		client_t *client = (client_t *)malloc(sizeof(client_t));
 		client_init(client, new_socket, server->db);
-		sigprocmask(SIG_BLOCK, &mask, NULL);
+		sigprocmask(SIG_BLOCK, &mask, NULL); // Bloquer les signaux pour le threads fils
 		checked(pthread_create(&client->tid, NULL, client_thread, client));
 		sigprocmask(SIG_UNBLOCK, &mask, NULL);
 		clients.push_back(client);

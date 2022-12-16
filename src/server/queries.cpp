@@ -1,18 +1,19 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <string>
-#include <vector>
 #include <algorithm>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <unistd.h>
+#include <vector>
 
 #include <fstream>
 #include <iostream>
 
-#include "student.hpp"
-#include "queries.hpp"
 #include "../common.hpp"
+#include "queries.hpp"
+#include "student.hpp"
 
 using namespace std;
+
 // execute_* ///////////////////////////////////////////////////////////////////
 
 vector<string> execute_select(int fout, database_t *const db, const char *const field, const char *const value)
@@ -23,8 +24,7 @@ vector<string> execute_select(int fout, database_t *const db, const char *const 
 	std::function<bool(const student_t &)> predicate = get_filter(field, value);
 	if (!predicate)
 	{
-		messages = query_fail_bad_filter(fout, field, value);
-		return messages;
+		return query_fail_bad_filter(fout, field, value);
 	}
 	for (const student_t &s : db->data)
 	{
@@ -51,14 +51,12 @@ vector<string> execute_update(int fout, database_t *const db, const char *const 
 	std::function<bool(const student_t &)> predicate = get_filter(ffield, fvalue);
 	if (!predicate)
 	{
-		messages = query_fail_bad_filter(fout, ffield, fvalue);
-		return messages;
+		return query_fail_bad_filter(fout, ffield, fvalue);
 	}
 	std::function<void(student_t &)> updater = get_updater(efield, evalue);
 	if (!updater)
 	{
-		messages = query_fail_bad_update(fout, efield, evalue);
-		return messages;
+		return query_fail_bad_update(fout, efield, evalue);
 	}
 	for (student_t &s : db->data)
 	{
@@ -76,8 +74,8 @@ vector<string> execute_update(int fout, database_t *const db, const char *const 
 }
 
 vector<string> execute_insert(int fout, database_t *const db, const char *const fname,
-					const char *const lname, const unsigned id, const char *const section,
-					const tm birthdate)
+							  const char *const lname, const unsigned id, const char *const section,
+							  const tm birthdate)
 {
 	vector<string> messages;
 	db->data.emplace_back();
@@ -93,23 +91,21 @@ vector<string> execute_insert(int fout, database_t *const db, const char *const 
 	messages.push_back(buffer);
 	messages.push_back(END_OF_MESSAGE);
 	return messages;
-
 }
 
 vector<string> execute_delete(int fout, database_t *const db, const char *const field,
-					const char *const value)
+							  const char *const value)
 {
 	vector<string> messages;
 	std::function<bool(const student_t &)> predicate = get_filter(field, value);
 	if (!predicate)
 	{
-		messages = query_fail_bad_filter(fout, field, value);
-		return messages;
+		return query_fail_bad_filter(fout, field, value);
 	}
 	int old_size = db->data.size();
 	auto new_end = remove_if(db->data.begin(), db->data.end(), predicate);
 	db->data.erase(new_end, db->data.end());
-	//Génération du message 
+	// Génération du message
 	int new_size = db->data.size();
 	int diff = old_size - new_size;
 	char buffer[BUFFER_SIZE];
@@ -123,86 +119,78 @@ vector<string> execute_delete(int fout, database_t *const db, const char *const 
 
 vector<string> parse_and_execute_select(int fout, database_t *db, const char *const query)
 {
-	vector<string> messages;
 	char ffield[32], fvalue[64]; // filter data
 	int counter;
 	if (sscanf(query, "select %31[^=]=%63s%n", ffield, fvalue, &counter) != 2)
 	{
-		messages = query_fail_bad_format(fout, "select");
+		return query_fail_bad_format(fout, "select");
 	}
 	else if (static_cast<unsigned>(counter) < strlen(query))
 	{
-		messages = query_fail_too_long(fout, "select");
+		return query_fail_too_long(fout, "select");
 	}
 	else
 	{
-		messages = execute_select(fout, db, ffield, fvalue);
+		return execute_select(fout, db, ffield, fvalue);
 	}
-	return messages;
 }
 
 vector<string> parse_and_execute_update(int fout, database_t *db, const char *const query)
 {
-	vector<string> messages;
 	char ffield[32], fvalue[64]; // filter data
 	char efield[32], evalue[64]; // edit data
 	int counter;
 	if (sscanf(query, "update %31[^=]=%63s set %31[^=]=%63s%n", ffield, fvalue, efield, evalue,
 			   &counter) != 4)
 	{
-		messages = query_fail_bad_format(fout, "update");
+		return query_fail_bad_format(fout, "update");
 	}
 	else if (static_cast<unsigned>(counter) < strlen(query))
 	{
-		messages = query_fail_too_long(fout, "update");
+		return query_fail_too_long(fout, "update");
 	}
 	else
 	{
-		messages = execute_update(fout, db, ffield, fvalue, efield, evalue);
+		return execute_update(fout, db, ffield, fvalue, efield, evalue);
 	}
-	return messages;
 }
 
 vector<string> parse_and_execute_insert(int fout, database_t *db, const char *const query)
 {
-	vector<string> messages;
 	char fname[64], lname[64], section[64], date[11];
 	unsigned id;
 	tm birthdate;
 	int counter;
 	if (sscanf(query, "insert %63s %63s %u %63s %10s%n", fname, lname, &id, section, date, &counter) != 5 || strptime(date, "%d/%m/%Y", &birthdate) == NULL)
 	{
-		messages = query_fail_bad_format(fout, "insert");
+		return query_fail_bad_format(fout, "insert");
 	}
 	else if (static_cast<unsigned>(counter) < strlen(query))
 	{
-		messages = query_fail_too_long(fout, "insert");
+		return query_fail_too_long(fout, "insert");
 	}
 	else
 	{
-		messages = execute_insert(fout, db, fname, lname, id, section, birthdate);
+		return execute_insert(fout, db, fname, lname, id, section, birthdate);
 	}
-	return messages;
 }
 
 vector<string> parse_and_execute_delete(int fout, database_t *db, const char *const query)
 {
-	vector<string> messages;
 	char ffield[32], fvalue[64]; // filter data
 	int counter;
 	if (sscanf(query, "delete %31[^=]=%63s%n", ffield, fvalue, &counter) != 2)
 	{
-		messages =  query_fail_bad_format(fout, "delete");
+		return query_fail_bad_format(fout, "delete");
 	}
 	else if (static_cast<unsigned>(counter) < strlen(query))
 	{
-		messages = query_fail_too_long(fout, "delete");
+		return query_fail_too_long(fout, "delete");
 	}
 	else
 	{
-		messages = execute_delete(fout, db, ffield, fvalue);
+		return execute_delete(fout, db, ffield, fvalue);
 	}
-	return messages;
 }
 
 vector<string> parse_and_execute(int fout, database_t *db, const char *const query, mutex_t *mutex)

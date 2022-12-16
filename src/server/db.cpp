@@ -9,9 +9,8 @@
 #include <algorithm> // std::min
 #include <cassert>   // assert
 #include <climits>   // SSIZE_MAX
-#include <utility>   // std::move
 #include <iostream>
-
+#include <utility> // std::move
 
 void db_load(database_t *db, const char *path)
 {

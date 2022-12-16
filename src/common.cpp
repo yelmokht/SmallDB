@@ -1,9 +1,9 @@
 #include <arpa/inet.h>
+#include <deque>
+#include <iostream>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <deque>
-#include <iostream>
 
 #include "common.hpp"
 
@@ -18,15 +18,7 @@ int _checked(int ret, const std::string &calling_function)
 	}
 	return ret;
 }
-/**
- *
- * @brief Reçoit un message de BUFFER_SIZE bytes
- *
- * @param fd Socket émetteur de message
- * @param buffer Buffer pour stocker message de taille BUFFER_SIZE
- * @return true Message reçu
- * @return false Connexion perdue ou error
- */
+
 bool recv_message(int fd, char *buffer)
 {
 	int recv_bytes = 0;
@@ -37,14 +29,6 @@ bool recv_message(int fd, char *buffer)
 	return recv_bytes > 0;
 }
 
-/**
- * @brief Envois un message de BUFFER_SIZE bytes
- *
- * @param sock Socket récepteur du message
- * @param buffer Message à envoyer de taille BUFFER_SIZE
- * @return true: Message envoyé
- * @return false: Connexion perdue ou error
- */
 bool send_message(int sock, const char *buffer)
 {
 	int sent_bytes = 0;
@@ -53,20 +37,33 @@ bool send_message(int sock, const char *buffer)
 	return sent_bytes > 0;
 }
 
-bool send_protocol(client_t *client, vector<string> list) {
+bool send_protocol(client_t *client, vector<string> &message_list)
+{
 	int i = 0;
 	char buffer[BUFFER_SIZE];
-	while (client->status == CLIENT_CONNECTED && i < list.size()) {
-		send_message(client->sock, list[i].c_str());
-		if (recv_message(client->sock, buffer) > 0) {
-			if (strcmp(buffer, DISCONNECT_MESSAGE) == 0) {
-				client->status = CLIENT_DISCONNECTED;
+	while (i < message_list.size())
+	{
+		if (client->status == CLIENT_CONNECTED)
+		{ // Envoi d'un message au client
+			send_message(client->sock, message_list[i].c_str());
+			// Reçois la confirmation de réception de la part du client
+			if (recv_message(client->sock, buffer) > 0)
+			{
+				if (strcmp(buffer, DISCONNECT_MESSAGE) == 0)
+				{ // Si le client se déconnecte lors de l'envoi de message
+					client->status = CLIENT_DISCONNECTED;
+					return false;
+				}
+			}
+			else
+			{ // Erreur dans le socket => Perte de connection
+				client->status = CLIENT_LOST_CONNECTION;
 				return false;
 			}
 		}
-		else {
-			client->status = CLIENT_LOST_CONNECTION;
-			return false;
+		else
+		{
+			cerr << "Error: send_protocol(): Client disconnected" << endl;
 		}
 		i++;
 	}
