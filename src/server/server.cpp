@@ -1,22 +1,22 @@
 #include <arpa/inet.h>
+#include <err.h> // err
 #include <netinet/tcp.h>
+#include <semaphore.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <signal.h>
-#include <err.h> // err
-#include <semaphore.h>
 
-#include <string>
+#include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <cstring>
-#include <vector>
-#include <algorithm>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "../common.hpp"
 #include "server.hpp"
@@ -44,7 +44,7 @@ void close_client_thread(client_t *client)
 	pthread_t tid_save = client->tid;
 	free(client);
 	clients.erase(client_iterator);
-	checked(pthread_cancel(tid_save));
+	pthread_cancel(tid_save);
 }
 
 void server_disconnect_client(client_t *client)
@@ -135,7 +135,7 @@ void server_configure_mutex(mutex_t &mutex)
 void *client_thread(void *args)
 {
 	client_t *client = (client_t *)args;
-	char buffer[128];
+	char buffer[BUFFER_SIZE];
 	while ((recv_message(client->sock, buffer)))
 	{
 		if (strcmp(buffer, "DISCONNECTED") == 0)
@@ -163,10 +163,9 @@ int server_run(server_t *server)
 	// Initialisation des mutex
 	server_configure_mutex(mutex);
 	// Acceptation des nouvelles connexions
-	int new_socket;
 	while (1)
 	{
-		new_socket = checked(accept(server->sock, (struct sockaddr *)&address, (socklen_t *)&addrlen));
+		int new_socket = checked(accept(server->sock, (struct sockaddr *)&address, (socklen_t *)&addrlen));
 		client_t *client = (client_t *)malloc(sizeof(client_t));
 		client_init(client, new_socket, server->db);
 		sigprocmask(SIG_BLOCK, &mask, NULL);

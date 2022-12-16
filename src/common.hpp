@@ -13,7 +13,7 @@
 // The macro allows us to retrieve the name of the calling function
 #define checked(call) _checked(call, #call)
 
-int _checked(int ret, std::string calling_function);
+int _checked(int ret, const std::string &calling_function);
 
 bool recv_message(int fd, char *buffer);
 

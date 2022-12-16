@@ -1,15 +1,15 @@
 #include "common.hpp"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <string.h>
 #include <arpa/inet.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #include <iostream>
 
 using namespace std;
 
-int _checked(int ret, std::string calling_function)
+int _checked(int ret, const std::string &calling_function)
 {
 	if (ret < 0)
 	{
@@ -18,7 +18,6 @@ int _checked(int ret, std::string calling_function)
 	}
 	return ret;
 }
-
 /**
  *
  * @brief Reçoit un message de BUFFER_SIZE bytes
@@ -30,7 +29,7 @@ int _checked(int ret, std::string calling_function)
  */
 bool recv_message(int fd, char *buffer)
 {
-	int recv_bytes;
+	int recv_bytes = 0;
 	if ((recv_bytes = recv(fd, buffer, BUFFER_SIZE, 0)) < 0)
 	{
 		cerr << "Error: recv_message(): " << strerrorname_np(errno) << endl;
@@ -48,7 +47,7 @@ bool recv_message(int fd, char *buffer)
  */
 bool send_message(int sock, char *buffer)
 {
-	int sent_bytes;
+	int sent_bytes = 0;
 	if ((sent_bytes = send(sock, buffer, BUFFER_SIZE, 0)) < 0)
 		cerr << "Error: send_message(): " << strerrorname_np(errno) << endl;
 	return sent_bytes > 0;

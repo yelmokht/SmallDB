@@ -62,8 +62,7 @@ int main(int argc, char const *argv[])
    }
    cout << "Connexion established!" << endl;
    // Récupérarion de la requête
-   char buffer[128];
-   uint32_t length;
+   char buffer[BUFFER_SIZE];
    cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
