@@ -1,11 +1,11 @@
-#include "common.hpp"
-
 #include <arpa/inet.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-
+#include <deque>
 #include <iostream>
+
+#include "common.hpp"
 
 using namespace std;
 
@@ -45,10 +45,30 @@ bool recv_message(int fd, char *buffer)
  * @return true: Message envoyé
  * @return false: Connexion perdue ou error
  */
-bool send_message(int sock, char *buffer)
+bool send_message(int sock, const char *buffer)
 {
 	int sent_bytes = 0;
 	if ((sent_bytes = send(sock, buffer, BUFFER_SIZE, 0)) < 0)
 		cerr << "Error: send_message(): " << strerrorname_np(errno) << endl;
 	return sent_bytes > 0;
+}
+
+bool send_protocol(client_t *client, vector<string> list) {
+	int i = 0;
+	char buffer[BUFFER_SIZE];
+	while (client->status == CLIENT_CONNECTED && i < list.size()) {
+		send_message(client->sock, list[i].c_str());
+		if (recv_message(client->sock, buffer) > 0) {
+			if (strcmp(buffer, DISCONNECT_MESSAGE) == 0) {
+				client->status = CLIENT_DISCONNECTED;
+				return false;
+			}
+		}
+		else {
+			client->status = CLIENT_LOST_CONNECTION;
+			return false;
+		}
+		i++;
+	}
+	return true;
 }

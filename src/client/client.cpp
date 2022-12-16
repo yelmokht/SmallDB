@@ -27,7 +27,7 @@ void handler(int signum)
    case SIGINT:
       cout << endl
            << "Closing client" << endl;
-      send_message(sock, (char*)("DISCONNECTED"));
+      send_message(sock, DISCONNECT_MESSAGE);
       close(sock);
       exit(0);
       break;
@@ -60,10 +60,10 @@ int main(int argc, char const *argv[])
       cout << "Trying connection with server..." << endl;
       sleep(1);
    }
-   cout << "Connexion established!" << endl;
+   // cout << "Connexion established!" << endl;
    // Récupérarion de la requête
    char buffer[BUFFER_SIZE];
-   cout << ">";
+   // cout << ">";
    while ((fgets(buffer, sizeof(buffer), stdin)) != NULL)
    {
       // Envoi via socket
@@ -71,9 +71,9 @@ int main(int argc, char const *argv[])
       if (!send_message(sock, buffer))
          cout << "Erreur sending message to server" << endl;
       // Attente de réponse
-      //(recv_message(sock, (char *)&length, 4)) && 
       while ((recv_message(sock, buffer)))
       {
+         send_message(sock, RECEIVED_MESSAGE);
          if (strcmp(buffer, END_OF_MESSAGE) == 0)
          {
             break;
@@ -81,7 +81,7 @@ int main(int argc, char const *argv[])
          cout << buffer;
       }
       memset(buffer, 0, sizeof(buffer));
-      cout << ">";
+      // cout << ">";
    }
    close(sock);
    return 0;

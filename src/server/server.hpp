@@ -12,10 +12,12 @@ typedef struct
     database_t* db;
 }server_t;
 
+enum status_t{ CLIENT_CONNECTED, CLIENT_DISCONNECTED, CLIENT_LOST_CONNECTION };
 typedef struct
 {
 	int client_id;
 	int sock;
+	status_t status;
 	pthread_t tid;
 	database_t *db;
 } client_t;

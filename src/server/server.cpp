@@ -17,6 +17,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <deque>
 
 #include "../common.hpp"
 #include "server.hpp"
@@ -89,11 +90,12 @@ void handler(int signum)
 	}
 }
 
-void client_init(client_t *args, int sock, database_t *db)
+void client_init(client_t *client, int sock, database_t *db)
 {
-	args->client_id = (int)clients.size() + 1;
-	args->sock = sock;
-	args->db = db;
+	client->client_id = (int)clients.size() + 1;
+	client->sock = sock;
+	client->status = CLIENT_CONNECTED;
+	client->db = db;
 }
 
 void server_block_signals(sigset_t &mask)
@@ -135,17 +137,36 @@ void server_configure_mutex(mutex_t &mutex)
 void *client_thread(void *args)
 {
 	client_t *client = (client_t *)args;
+	vector<string> messages;
 	char buffer[BUFFER_SIZE];
-	while ((recv_message(client->sock, buffer)))
+	while (true)
 	{
-		if (strcmp(buffer, "DISCONNECTED") == 0)
-		{
-			server_disconnect_client(client);
-			return NULL;
+		switch(client->status) {
+			case CLIENT_CONNECTED :
+			if (!recv_message(client->sock, buffer)) {
+				client->status = CLIENT_LOST_CONNECTION;
+				break;
+			}
+			if (strcmp(buffer, DISCONNECT_MESSAGE) == 0)
+			{
+				client->status = CLIENT_DISCONNECTED;
+				break;
+			}
+			messages = parse_and_execute(client->sock, client->db, buffer, &mutex);
+			send_protocol(client, messages);
+				break;
+			case CLIENT_DISCONNECTED :
+				server_disconnect_client(client);
+				return NULL;
+				break;
+			case CLIENT_LOST_CONNECTION :
+				server_lost_client_connection(client);
+				return NULL;
+				break;
+			default :
+				break;
 		}
-		parse_and_execute(client->sock, client->db, buffer, &mutex);
 	}
-	server_lost_client_connection(client);
 	return NULL;
 }
 
