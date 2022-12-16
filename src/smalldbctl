@@ -1,0 +1,58 @@
+#! /bin/bash
+
+#Auteurs
+#Ferreira Brenno
+#El Mokhtari Younes
+#Jeq Ismail
+
+#La commande list indique l’adresse IP des différents clients connectés à smalldb.
+list() {
+	num=$(ss --no-header -Ontp4 'sport = :28772' | /usr/bin/wc -l)
+	arr=($(ss --no-header -Ontp4 'sport = :28772'| /usr/bin/cut -d " " -f 15))
+	echo "Found $num client(s)"
+	for i in "${arr[@]}"
+	do
+	echo "$i"
+	done
+	echo "Done"
+}
+
+#La commande sync envoie un signal SIGUSR1 au processus principal de chaque base de données en
+#cours d’exécution pour leur demander que leur base de données soit sauvegardée sur le disque.
+sync() {
+	num=$(/usr/bin/ps -C smalldb -o pid=$PID| /usr/bin/wc -l)
+	arr=($(/usr/bin/ps -C smalldb -o pid=$PID))
+	echo "Found $num server(s)"
+	for i in "${arr[@]}"
+	do
+	echo "Syncing process $i"
+	kill -SIGUSR1 $i
+	done
+	echo "Done"
+}
+
+##La commande stop envoie un signal SIGINT au processus principal de chaque base de données en
+#cours d’exécution pour leur demander que leur base de données soit sauvegardée sur le disque et fermée.
+stop() {
+	num=$(/usr/bin/ps -C smalldb -o pid=$PID | /usr/bin/wc -l)
+	arr=($(/usr/bin/ps -C smalldb -o pid=$PID))
+	echo "Found $num server(s)"
+	for i in "${arr[@]}"
+	do
+	echo "Stopping process $i..."
+	kill -SIGINT $i
+	done
+	echo "Done"
+}
+
+
+#Script
+if [ $1 == "list" ]; then
+	list
+fi
+if [ $1 == "sync" ]; then
+	sync
+fi
+if [ $1 == "stop" ]; then
+	stop
+fi
