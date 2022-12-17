@@ -27,6 +27,7 @@ using namespace std;
 database_t *DB;				// Pointeur vers la base de donnée
 vector<client_t *> clients; // Liste de tous les client connectés
 mutex_t mutex;				// Structure contenant tous les mutex du mécanisme de synchronisme
+int sock;
 
 void config_socket_opt(int sock)
 {
@@ -79,6 +80,7 @@ void handler(int signum)
 		break;
 	case SIGINT: // Signal d'interruption du processus
 		cout << "\nReceived SIGINT signal!" << endl;
+		shutdown(sock, SHUT_RD);
 		for (auto client : clients)
 		{ // Disconnecter tous les clients
 			warnx("Disconnecting client %d...", client->client_id);
@@ -87,6 +89,7 @@ void handler(int signum)
 		cout << "Committing database changes to the disk..." << endl;
 		db_save(DB);
 		cout << "Done." << endl;
+		close(sock);
 		exit(0);
 		break;
 	default:
@@ -114,6 +117,7 @@ void server_configure(server_t *server, struct sockaddr_in &address)
 {
 	DB = server->db;
 	server->sock = checked(socket(AF_INET, SOCK_STREAM, 0));
+	sock = server->sock;
 	config_socket_opt(server->sock);
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;

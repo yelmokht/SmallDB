@@ -12,12 +12,12 @@
 
 using namespace std;
 
-// Variable globale afin de permettre le gestionnaire de signal ait accès à cette donnée.
+// Variable globale afin de permettre au gestionnaire de signaux d'avoir accès à cette donnée.
 int sock; // Socket serveur
 
 /**
  * @brief Gestionnaire de signal du client
- *
+ * 
  * @param signum Code du signal
  */
 void handler(int signum)
@@ -42,17 +42,19 @@ void handler(int signum)
 		break;
 	}
 }
+
 /**
- * @brief Configure le gestionnaire de signal du client
- *
+ * @brief Configure le gestionnaire de signaux du client
+ * 
  */
 void client_configure_signal_handler()
 {
 	signal(SIGPIPE, handler);
 	signal(SIGINT, handler);
 }
+
 /**
- * @brief Créer et configure le socket servant à ce connecter avec le serveur
+ * @brief Créer et configure le socket servant à se connecter avec le serveur
  *
  * @param serv_addr Structure d'adressage
  * @param serv_ip IP du serveur
@@ -62,9 +64,9 @@ void client_configure_socket(struct sockaddr_in &serv_addr, const char *serv_ip)
 	sock = checked(socket(AF_INET, SOCK_STREAM, 0));
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(28772);
-	// Conversion de string vers IPv4 ou IPv6 en binaire
-	inet_pton(AF_INET, serv_ip, &serv_addr.sin_addr);
+	inet_pton(AF_INET, serv_ip, &serv_addr.sin_addr); // Conversion de string vers IPv4 ou IPv6 en binaire
 }
+
 /**
  * @brief Connecte le client au serveur
  *
